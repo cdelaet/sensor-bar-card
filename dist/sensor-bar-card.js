@@ -562,6 +562,11 @@ class SensorBarCard extends HTMLElement {
         const spans = innerLabel.querySelectorAll('span');
         if (spans[1]) spans[1].textContent = display + (unit ? ' ' + unit : '');
       }
+      const aboveLabel = row.querySelector('.bar-label-above');
+      if (aboveLabel) {
+        const spans = aboveLabel.querySelectorAll('span');
+        if (spans[1]) spans[1].textContent = display + (unit ? ' ' + unit : '');
+      }
 
       // Update peak marker position
       if (ecfg.show_peak && !isNaN(rawVal)) {
