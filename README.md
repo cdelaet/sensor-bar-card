@@ -1,7 +1,7 @@
 # Sensor Bar Card Plus
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
-[![GitHub release](https://img.shields.io/github/release/cdelaet/sensor-bar-card.svg)](https://github.com/cdelaet/sensor-bar-card/releases)
+[![GitHub release](https://img.shields.io/github/release/cdelaet/sensor-bar-card-plus.svg)](https://github.com/cdelaet/sensor-bar-card-plus/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 > [!NOTE]
@@ -22,7 +22,9 @@
 > If you want to support the original author, TommySharpNZ's Buy Me a Coffee page is:
 > https://buymeacoffee.com/tommysharpnz
 >
-> This fork is published as a separate card to avoid conflicts with the original project. It uses:
+> This fork is published as a separate card to avoid conflicts with the original project. It is **not a drop-in replacement** for `custom:sensor-bar-card`.
+>
+> It uses:
 > - resource: `/local/sensor-bar-card-plus.js`
 > - card type: `custom:sensor-bar-card-plus`
 
@@ -44,10 +46,10 @@ Clicking any bar opens the native Home Assistant entity dialog with full history
 - 📍 **Four label positions** — left, above, inside the bar, or off
 - 📈 **Optional peak marker** — a subtle chevron and line marking the highest value seen this session
 - 🎯 **Optional target marker** — a fixed chevron and line marking a configurable goal or threshold
-- 🚨 **Optional above-target color** — highlight the filled bar segment beyond the target with a separate color
-- 🔄 **Dynamic min/max/target support** — optionally source `min`, `max`, and `target` from other entity states
-- 🏷️ **Optional target value label** — show the target value below the marker
-- ↔️ **Responsive label alignment** — above labels and target labels stay aligned during resize and zoom
+- `PLUS` 🚨 **Optional above-target color** — highlight the filled bar segment beyond the target with a separate color
+- `PLUS` 🔄 **Dynamic min/max/target support** — optionally source `min`, `max`, and `target` from other entity states
+- `PLUS` 🏷️ **Optional target value label** — show the target value below the marker
+- `PLUS` ↔️ **Responsive label alignment** — above labels and target labels stay aligned during resize and zoom
 - ✨ **Animated fill** — smooth bar width and colour transitions on value change
 - 🖱️ **Native HA entity dialog** — click any bar to open the Home Assistant more-info popup with history
 - 🔧 **Per-entity overrides** — every option can be set as a global default and overridden per entity
@@ -61,18 +63,20 @@ Clicking any bar opens the native Home Assistant entity dialog with full history
 
 ## Installation
 
+`PLUS` labels in this README mark features that are specific to Sensor Bar Card Plus and are not part of the original upstream card.
+
 ### HACS (Recommended)
 
 1. Open **HACS** in Home Assistant
 2. Click the three dots (⋮) in the top right → **Custom repositories**
-3. Add `https://github.com/cdelaet/sensor-bar-card` and select **Dashboard** as the category
+3. Add `https://github.com/cdelaet/sensor-bar-card-plus` and select **Dashboard** as the category
 4. Click **Add**
 5. Search for **Sensor Bar Card Plus** and click **Download**
 6. Hard refresh your browser (Ctrl+Shift+R)
 
 ### Manual
 
-1. Download `sensor-bar-card-plus.js` from the [latest release](https://github.com/cdelaet/sensor-bar-card/releases/latest)
+1. Download `sensor-bar-card-plus.js` from the [latest release](https://github.com/cdelaet/sensor-bar-card-plus/releases/latest)
 2. Copy it to your Home Assistant `/config/www/` folder
 3. Go to **Settings → Dashboards → Resources** and add:
    - URL: `/local/sensor-bar-card-plus.js`
@@ -302,6 +306,8 @@ If an entity ID is not found in Home Assistant (e.g. a typo or a device that's b
 ---
 
 ### Dynamic Min / Max / Target Entities
+
+`PLUS`
 
 Use entity states to drive the scale and target marker dynamically. This is useful when thresholds or limits are managed elsewhere in Home Assistant.
 
@@ -654,6 +660,8 @@ entities:
 
 ### Target Marker With Value Label
 
+`PLUS`
+
 Enable `show_target_label` to render the target value below the marker. The label stays attached to the marker during updates and remains within the bar bounds when the card is narrow or the target is close to either edge.
 
 ```yaml
@@ -682,6 +690,8 @@ entities:
 ---
 
 ### Above-Target Color
+
+`PLUS`
 
 Use `above_target_color` to highlight only the part of the filled bar that extends beyond the target marker. This is useful when you want the normal range to keep its existing bar color while clearly calling out the exceeded portion.
 
