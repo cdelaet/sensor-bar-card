@@ -1,9 +1,8 @@
-# Sensor Bar Card
+# Sensor Bar Card Plus
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
-[![GitHub release](https://img.shields.io/github/release/TommySharpNZ/sensor-bar-card.svg)](https://github.com/TommySharpNZ/Sensor-Bar-Card/releases)
+[![GitHub release](https://img.shields.io/github/release/cdelaet/sensor-bar-card.svg)](https://github.com/cdelaet/sensor-bar-card/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Thanks!-%23FFDD00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/tommysharpnz)
 
 > [!NOTE]
 > This repository is a fork of the original project by TommySharpNZ:
@@ -14,10 +13,18 @@
 > - layout refactor for consistent bar alignment
 > - dynamic min/max/target entities
 > - target marker and label system
+> - highlight color when value is above the target marker
 > - responsive alignment during resizing
 > - various bug fixes and rendering improvements
 > 
-> The original README from the upstream project is preserved below.
+> The original README can be found in the original project. However, the copy of the README which you're currently reading reflects the added features.
+>
+> If you want to support the original author, TommySharpNZ's Buy Me a Coffee page is:
+> https://buymeacoffee.com/tommysharpnz
+>
+> This fork is published as a separate card to avoid conflicts with the original project. It uses:
+> - resource: `/local/sensor-bar-card-plus.js`
+> - card type: `custom:sensor-bar-card-plus`
 
 A polished, highly configurable bar card for [Home Assistant](https://www.home-assistant.io/) Lovelace dashboards. Display any sensor as an animated, colour-coded horizontal bar.
 
@@ -58,26 +65,30 @@ Clicking any bar opens the native Home Assistant entity dialog with full history
 
 1. Open **HACS** in Home Assistant
 2. Click the three dots (⋮) in the top right → **Custom repositories**
-3. Add `https://github.com/TommySharpNZ/Sensor-Bar-Card` and select **Dashboard** as the category
+3. Add `https://github.com/cdelaet/sensor-bar-card` and select **Dashboard** as the category
 4. Click **Add**
-5. Search for **Sensor Bar Card** and click **Download**
+5. Search for **Sensor Bar Card Plus** and click **Download**
 6. Hard refresh your browser (Ctrl+Shift+R)
 
 ### Manual
 
-1. Download `sensor-bar-card.js` from the [latest release](https://github.com/TommySharpNZ/Sensor-Bar-Card/releases/latest)
+1. Download `sensor-bar-card-plus.js` from the [latest release](https://github.com/cdelaet/sensor-bar-card/releases/latest)
 2. Copy it to your Home Assistant `/config/www/` folder
 3. Go to **Settings → Dashboards → Resources** and add:
-   - URL: `/local/sensor-bar-card.js`
+   - URL: `/local/sensor-bar-card-plus.js`
    - Type: `JavaScript Module`
 4. Hard refresh your browser (Ctrl+Shift+R)
+
+### Migrating From The Original Card
+
+If you already use the original project, this fork can be installed side-by-side. Update your dashboard configuration from `custom:sensor-bar-card` to `custom:sensor-bar-card-plus`, and update the resource URL to `/local/sensor-bar-card-plus.js`.
 
 ---
 
 ## Quick Start
 
 ```yaml
-type: custom:sensor-bar-card
+type: custom:sensor-bar-card-plus
 title: Power Usage
 entities:
   - entity: sensor.kettle_power
@@ -195,7 +206,7 @@ color: '#4a9eff'
 When using `label_position: left`, all name labels share a fixed-width column so the bars all start at the same horizontal position. The default width is `100px` — use `label_width` to widen it if your entity names are long, or narrow it for more compact cards. It can be set globally or overridden per entity.
 
 ```yaml
-type: custom:sensor-bar-card
+type: custom:sensor-bar-card-plus
 label_position: left
 label_width: 140   # wider column for longer names
 entities:
@@ -295,7 +306,7 @@ If an entity ID is not found in Home Assistant (e.g. a typo or a device that's b
 Use entity states to drive the scale and target marker dynamically. This is useful when thresholds or limits are managed elsewhere in Home Assistant.
 
 ```yaml
-type: custom:sensor-bar-card
+type: custom:sensor-bar-card-plus
 entities:
   - entity: sensor.grid_import_qh_projected_end_w
     min: 0
@@ -314,7 +325,7 @@ The simplest possible config. One entity, default severity colour mode, label on
 ![Basic single sensor](images/example-basic.png)
 
 ```yaml
-type: custom:sensor-bar-card
+type: custom:sensor-bar-card-plus
 title: Caravan Power
 entities:
   - entity: input_number.bar_card_test_power
@@ -334,7 +345,7 @@ This example uses a different custom gradient for each sensor type — cool blue
 ![Gradient colour mode](images/example-gradient.png)
 
 ```yaml
-type: custom:sensor-bar-card
+type: custom:sensor-bar-card-plus
 title: Gradient Colour Mode
 color_mode: gradient
 label_position: left
@@ -393,7 +404,7 @@ Hard colour bands that change at defined thresholds. Great for showing clearly w
 ![Severity colour mode](images/example-severity.png)
 
 ```yaml
-type: custom:sensor-bar-card
+type: custom:sensor-bar-card-plus
 title: Severity Colour Mode
 color_mode: severity
 label_position: left
@@ -431,7 +442,7 @@ One fixed colour for all bars regardless of value. Good for battery levels or an
 ![Single colour mode](images/example-single.png)
 
 ```yaml
-type: custom:sensor-bar-card
+type: custom:sensor-bar-card-plus
 title: Single Colour Mode
 label_position: left
 entities:
@@ -464,7 +475,7 @@ Name fixed-width on the left, value on the right. All bars start at the same hor
 ![Label position left](images/example-label-left.png)
 
 ```yaml
-type: custom:sensor-bar-card
+type: custom:sensor-bar-card-plus
 title: Label Position — Left
 label_position: left
 entities:
@@ -491,7 +502,7 @@ Name and value shown above the bar. Good when you want more vertical breathing r
 ![Label position above](images/example-label-above.png)
 
 ```yaml
-type: custom:sensor-bar-card
+type: custom:sensor-bar-card-plus
 title: Label Position — Above
 label_position: above
 entities:
@@ -514,7 +525,7 @@ Name and value rendered inside the bar itself. Works best with a taller bar heig
 ![Label position inside](images/example-label-inside.png)
 
 ```yaml
-type: custom:sensor-bar-card
+type: custom:sensor-bar-card-plus
 title: Label Position — Inside
 label_position: inside
 height: 48
@@ -538,7 +549,7 @@ No name label at all — value still shows on the right. Useful for very compact
 ![Label position off](images/example-label-off.png)
 
 ```yaml
-type: custom:sensor-bar-card
+type: custom:sensor-bar-card-plus
 title: Label Position — Off
 label_position: "off"
 entities:
@@ -562,7 +573,7 @@ Override the default label width.
 ![Label position off](images/example-label-width.png)
 
 ```yaml
-type: custom:sensor-bar-card
+type: custom:sensor-bar-card-plus
 title: Label Widths
 label_position: left
 color_mode: single
@@ -588,7 +599,7 @@ When `show_peak: true`, a subtle chevron (▼) and vertical line marks the highe
 ![Peak marker](images/example-peak.png)
 
 ```yaml
-type: custom:sensor-bar-card
+type: custom:sensor-bar-card-plus
 title: Peak Marker
 label_position: left
 show_peak: true
@@ -613,7 +624,7 @@ A fixed marker (▲) showing a goal or threshold. The target chevron points **up
 ![Target marker](images/example-target.png)
 
 ```yaml
-type: custom:sensor-bar-card
+type: custom:sensor-bar-card-plus
 title: Target Marker
 label_position: left
 entities:
@@ -646,7 +657,7 @@ entities:
 Enable `show_target_label` to render the target value below the marker. The label stays attached to the marker during updates and remains within the bar bounds when the card is narrow or the target is close to either edge.
 
 ```yaml
-type: custom:sensor-bar-card
+type: custom:sensor-bar-card-plus
 title: Target Marker Label
 label_position: left
 entities:
@@ -675,7 +686,7 @@ entities:
 Use `above_target_color` to highlight only the part of the filled bar that extends beyond the target marker. This is useful when you want the normal range to keep its existing bar color while clearly calling out the exceeded portion.
 
 ```yaml
-type: custom:sensor-bar-card
+type: custom:sensor-bar-card-plus
 title: Above Target Highlight
 label_position: left
 entities:
@@ -707,7 +718,7 @@ Peak (▼ top) and target (▲ bottom) on the same bar. Peak tracks the session 
 ![Peak and target together](images/example-peak-target.png)
 
 ```yaml
-type: custom:sensor-bar-card
+type: custom:sensor-bar-card-plus
 title: Peak & Target
 label_position: left
 show_peak: true
@@ -739,7 +750,7 @@ Control how many decimal places are shown in the value. Useful for tidying up te
 ![Decimal places](images/example-decimal.png)
 
 ```yaml
-type: custom:sensor-bar-card
+type: custom:sensor-bar-card-plus
 title: Decimal Places
 label_position: left
 min: 0
@@ -768,7 +779,7 @@ Use `icon: false` to remove the icon and its reserved space entirely. You can mi
 ![Hiding icons](images/example-no-icon.png)
 
 ```yaml
-type: custom:sensor-bar-card
+type: custom:sensor-bar-card-plus
 title: Icon Control
 label_position: left
 entities:
@@ -794,7 +805,7 @@ Adjust `height` to make bars taller or more compact. Can be set globally or per 
 ![Bar height variations](images/example-heights.png)
 
 ```yaml
-type: custom:sensor-bar-card
+type: custom:sensor-bar-card-plus
 title: Bar Heights
 label_position: left
 entities:
@@ -828,7 +839,7 @@ Every global option can be overridden per entity. This example uses a global gra
 ![Per-entity overrides](images/example-overrides.png)
 
 ```yaml
-type: custom:sensor-bar-card
+type: custom:sensor-bar-card-plus
 title: Per-Entity Overrides
 color_mode: gradient
 label_position: left
@@ -898,7 +909,7 @@ A few ideas that have been discussed and are on the roadmap — no timeline, but
 Pull requests and issues are welcome! Please open an issue before submitting major changes.
 
 1. Fork the repository
-2. Make your changes to `dist/sensor-bar-card.js`
+2. Make your changes to `dist/sensor-bar-card-plus.js`
 3. Test in Home Assistant
 4. Open a pull request
 

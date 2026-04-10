@@ -1,16 +1,16 @@
 /**
- * sensor-bar-card - A polished, configurable sensor bar card for Home Assistant
+ * sensor-bar-card-plus - A polished, configurable sensor bar card for Home Assistant
  *
  * Works great for: power, temperature, humidity, water flow, battery, CO2, and more.
  *
  * Installation:
  *   1. Copy this file to your HA config /www/ folder
- *   2. Add resource in Lovelace: /local/sensor-bar-card.js (type: module)
+ *   2. Add resource in Lovelace: /local/sensor-bar-card-plus.js (type: module)
  *   3. Restart or refresh browser
  *
  * ─── Global config options (all can be overridden per entity) ───────────────
  *
- *   type: custom:sensor-bar-card
+ *   type: custom:sensor-bar-card-plus
  *   title: My Sensors             # optional card title
  *   label_position: left          # left | above | inside | off
  *   color_mode: gradient          # gradient | severity | single
@@ -67,7 +67,7 @@
  * ─── Example configs ────────────────────────────────────────────────────────
  *
  *  Power monitoring:
- *   type: custom:sensor-bar-card
+ *   type: custom:sensor-bar-card-plus
  *   title: Power Usage
  *   color_mode: gradient
  *   entities:
@@ -77,7 +77,7 @@
  *       max: 3000
  *
  *  Dynamic scaling from sensors:
- *   type: custom:sensor-bar-card
+ *   type: custom:sensor-bar-card-plus
  *   title: Grid Peak Monitoring
  *   entities:
  *     - entity: sensor.grid_projected_peak_power
@@ -88,7 +88,7 @@
  *       above_target_color: '#FF66AA'
  *
  *  Temperature:
- *   type: custom:sensor-bar-card
+ *   type: custom:sensor-bar-card-plus
  *   title: Temperatures
  *   color_mode: severity
  *   severity:
@@ -109,7 +109,7 @@
  *       max: 40
  *
  *  Humidity:
- *   type: custom:sensor-bar-card
+ *   type: custom:sensor-bar-card-plus
  *   title: Humidity
  *   color_mode: single
  *   color: '#4a9eff'
@@ -841,11 +841,11 @@ class SensorBarCard extends HTMLElement {
   }
 }
 
-customElements.define('sensor-bar-card', SensorBarCard);
+customElements.define('sensor-bar-card-plus', SensorBarCard);
 
 window.customCards = window.customCards || [];
 window.customCards.push({
-  type: 'sensor-bar-card',
-  name: 'Sensor Bar Card',
-  description: 'Animated, colour-coded horizontal bar card for Home Assistant. Works with power, temperature, humidity, water flow, battery and more.',
+  type: 'sensor-bar-card-plus',
+  name: 'Sensor Bar Card Plus',
+  description: 'Animated, colour-coded horizontal bar card for Home Assistant with extended target and layout features.',
 });
