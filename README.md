@@ -23,6 +23,8 @@ Clicking any bar opens the native Home Assistant entity dialog with full history
 - 📍 **Four label positions** — left, above, inside the bar, or off
 - 📈 **Optional peak marker** — a subtle chevron and line marking the highest value seen this session
 - 🎯 **Optional target marker** — a fixed chevron and line marking a configurable goal or threshold
+- 🏷️ **Optional target value label** — show the target value below the marker
+- ↔️ **Responsive label alignment** — above labels and target labels stay aligned during resize and zoom
 - ✨ **Animated fill** — smooth bar width and colour transitions on value change
 - 🖱️ **Native HA entity dialog** — click any bar to open the Home Assistant more-info popup with history
 - 🔧 **Per-entity overrides** — every option can be set as a global default and overridden per entity
@@ -90,6 +92,7 @@ All options can be set at the **card level as global defaults** and overridden i
 | `peak_color` | string | `#888` | Colour of the peak marker |
 | `target` | number | — | Fixed target marker value (same scale as `min`/`max`) |
 | `target_color` | string | `#888` | Colour of the target marker |
+| `show_target_label` | boolean | `false` | Show the target value as a label below the target marker |
 | `decimal` | number | — | Decimal places to show in the value (e.g. `0`, `1`, `2`) |
 | `min` | number | `0` | Minimum value (shown as 0% bar width) |
 | `max` | number | `100` | Maximum value (shown as 100% bar width) |
@@ -161,7 +164,7 @@ color: '#4a9eff'
 | Value | Description |
 |---|---|
 | `left` | Name fixed on the left, value on the right — all bars start at the same position |
-| `above` | Name on the left above the bar, value on the right above the bar |
+| `above` | Name on the left above the bar, value on the right above the bar, aligned to the bar column |
 | `inside` | Name and value rendered inside the bar — best with a taller `height` |
 | `off` | No name label — value still shown on the right |
 
@@ -224,6 +227,8 @@ When `target` is set to a value, a fixed marker is drawn on the bar at that posi
 The target chevron points **up** from the bottom of the bar while the peak chevron points **down** from the top, so the two markers are always easy to tell apart at a glance.
 
 The target value uses the same scale as `min` and `max` — so if `max: 3000` and you want a target at 2000W, set `target: 2000`.
+
+Set `show_target_label: true` to display the target value below the marker. The label follows the marker as values update and is automatically clamped so it stays within the bar width, including near the left and right edges.
 
 ---
 
@@ -438,7 +443,7 @@ entities:
 
 ### Label Position: Above
 
-Name and value shown above the bar. Good when you want more vertical breathing room between rows.
+Name and value shown above the bar. Good when you want more vertical breathing room between rows. The above-line layout stays aligned with the bar column, so icon presence, browser zoom, and resizing do not shift it out of place.
 
 ![Label position above](images/example-label-above.png)
 
@@ -589,6 +594,35 @@ entities:
     min: 0
     max: 3000
     target: 2000
+```
+
+---
+
+### Target Marker With Value Label
+
+Enable `show_target_label` to render the target value below the marker. The label stays attached to the marker during updates and remains within the bar bounds when the card is narrow or the target is close to either edge.
+
+```yaml
+type: custom:sensor-bar-card
+title: Target Marker Label
+label_position: left
+entities:
+  - entity: input_number.bar_card_test_power
+    name: Caravan
+    icon: mdi:target
+    min: 0
+    max: 3000
+    target: 2600
+    target_color: "#4a9eff"
+    show_target_label: true
+  - entity: input_number.bar_card_test_power
+    name: Fridge
+    icon: mdi:target
+    min: 0
+    max: 1000
+    target: 150
+    target_color: "#4CAF50"
+    show_target_label: true
 ```
 
 ---
