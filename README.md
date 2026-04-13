@@ -109,31 +109,31 @@ All options can be set at the **card level as global defaults** and overridden i
 
 ### Card Options
 
-| Option | Type | Default | Description |
-|---|---|---|---|
-| `title` | string | — | Optional title shown above the bars |
-| `entities` | list | **required** | List of entities to display |
-| `label_position` | string | `left` | Label position — `left` \| `above` \| `inside` \| `off` |
-| `color_mode` | string | `severity` | Bar colour mode — `gradient` \| `severity` \| `single` |
-| `color` | string | `#4a9eff` | Bar colour when `color_mode: single` |
-| `gradient_stops` | list | green/orange/red | Custom gradient stop colours and positions — see [Gradient](#gradient) |
-| `severity` | list | green/orange/red | Colour bands — see [Severity](#severity-options) |
-| `animated` | boolean | `true` | Smooth bar width and colour transitions |
-| `show_peak` | boolean | `false` | Show peak marker for the highest value seen this session |
-| `peak_color` | string | `#888` | Colour of the peak marker |
-| `target` | number | — | Fixed target marker value (same scale as `min`/`max`) |
-| `target_entity` | string | — | Entity whose numeric state is used as the target marker value |
-| `target_color` | string | `#888` | Colour of the target marker |
-| `above_target_color` | string | — | Colour used for the filled portion of the bar beyond the target |
-| `show_target_label` | boolean | `false` | Show the target value as a label below the target marker |
-| `decimal` | number | — | Decimal places to show in the value (e.g. `0`, `1`, `2`) |
-| `min` | number | `0` | Minimum value (shown as 0% bar width) |
-| `min_entity` | string | — | Entity whose numeric state is used as the minimum value |
-| `max` | number | `100` | Maximum value (shown as 100% bar width) |
-| `max_entity` | string | — | Entity whose numeric state is used as the maximum value |
-| `height` | number | `38` | Bar height in pixels |
-| `label_width` | number | `100` | Width of the name label column in pixels — only applies when `label_position: left` |
-| `unit` | string | — | Override the unit of measurement displayed next to the value |
+| Option | Type | Default | Description | Plus |
+|---|---|---|---|---|
+| `title` | string | — | Optional title shown above the bars | - |
+| `entities` | list | **required** | List of entities to display | - | 
+| `label_position` | string | `left` | Label position — `left` \| `above` \| `inside` \| `off` | - |
+| `color_mode` | string | `severity` | Bar colour mode — `gradient` \| `severity` \| `single` | - |
+| `color` | string | `#4a9eff` | Bar colour when `color_mode: single` | - |
+| `gradient_stops` | list | green/orange/red | Custom gradient stop colours and positions — see [Gradient](#gradient) | - |
+| `severity` | list | green/orange/red | Colour bands — see [Severity](#severity-options) | - |
+| `animated` | boolean | `true` | Smooth bar width and colour transitions | - |
+| `show_peak` | boolean | `false` | Show peak marker for the highest value seen this session | - |
+| `peak_color` | string | `#888` | Colour of the peak marker | - |
+| `target` | number | — | Fixed target marker value (same scale as `min`/`max`) | - |
+| `target_entity` | string | — | Entity whose numeric state is used as the target marker value | `PLUS` |
+| `target_color` | string | `#888` | Colour of the target marker | - |
+| `above_target_color` | string | — | Colour used for the filled portion of the bar beyond the target | `PLUS` |
+| `show_target_label` | boolean | `false` | Show the target value as a label below the target marker | `PLUS` |
+| `decimal` | number | — | Decimal places to show in the value (e.g. `0`, `1`, `2`) | - |
+| `min` | number | `0` | Minimum value (shown as 0% bar width) | - |
+| `min_entity` | string | — | Entity whose numeric state is used as the minimum value | `PLUS` |
+| `max` | number | `100` | Maximum value (shown as 100% bar width) | - |
+| `max_entity` | string | — | Entity whose numeric state is used as the maximum value | `PLUS` |
+| `height` | number | `38` | Bar height in pixels | - |
+| `label_width` | number | `100` | Width of the name label column in pixels — only applies when `label_position: left` | - |
+| `unit` | string | — | Override the unit of measurement displayed next to the value | - |
 
 ### Entity Options
 
@@ -262,6 +262,8 @@ When `target` is set to a value, a fixed marker is drawn on the bar at that posi
 The target chevron points **up** from the bottom of the bar while the peak chevron points **down** from the top, so the two markers are always easy to tell apart at a glance.
 
 The target value uses the same scale as `min` and `max` — so if `max: 3000` and you want a target at 2000W, set `target: 2000`.
+
+`PLUS` 
 
 You can also provide `min_entity`, `max_entity`, and `target_entity` to source those values from other Home Assistant entities. If both a constant value and an entity are provided, the entity value takes precedence. If the entity state is unavailable or non-numeric, the card falls back to the constant value.
 
