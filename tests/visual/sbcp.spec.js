@@ -607,11 +607,6 @@ const scenarios = [
 
 for (const scenario of scenarios) {
   test(`visual regression: ${scenario.name}`, async ({ page }) => {
-    page.on('console', async (msg) => {
-      const values = await Promise.all(msg.args().map((a) => a.jsonValue()));
-      console.log(...values);
-    });
-
     const mount = await render(page, scenario);
     await expect(mount).toHaveScreenshot(`${scenario.name}.png`);
   });
@@ -816,4 +811,131 @@ test('ha-card wrapper stays stable across config and hass updates', async ({ pag
   expect(result.sameHaCard).toBe(true);
   expect(result.haCardCount).toBe(1);
   expect(result.preservedCardModString).toBe(true);
+});
+
+test('visual regression: above-label-responsive-stack', async ({ page }) => {
+  await page.setViewportSize({ width: 900, height: 2200 });
+  await page.goto('/tests/visual/fixtures/harness.html');
+
+  await page.evaluate(async () => {
+    const mount = document.getElementById('mount');
+    mount.style.width = '492px';
+    mount.style.display = 'flex';
+    mount.style.flexDirection = 'column';
+    mount.style.gap = '18px';
+    mount.innerHTML = '';
+
+    const states = {
+      'sensor.sbcp_hero_shot_solar': window.__sbcpCreateState(7.2, {
+        friendly_name: 'Solar Production South Roof',
+        icon: 'mdi:solar-power',
+        unit_of_measurement: 'kW',
+      }),
+    };
+
+    const gradientStops = [
+      { pos: 0, color: '#0c4a6e' },
+      { pos: 34, color: '#0ea5e9' },
+      { pos: 68, color: '#22c55e' },
+      { pos: 100, color: '#facc15' },
+    ];
+    const solarIconSvg = `
+      <svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20" fill="currentColor">
+        <circle cx="18" cy="6" r="3.2"></circle>
+        <path d="M3 13h9l2.25 8H5.25L3 13Zm3.2 2 1.15 4h4.2l-1.15-4H6.2Zm7.4 0H21v2h-6.85l-.55-2ZM8 3h7v2H8V3Zm-3.5 4.2 1.4-1.4 2.1 2.1-1.4 1.4-2.1-2.1ZM2 9h3v2H2V9Z"></path>
+      </svg>`;
+
+    const decorateHarnessIcons = () => {
+      document.querySelectorAll('sensor-bar-card-plus').forEach((card) => {
+        card.shadowRoot?.querySelectorAll('ha-icon').forEach((icon) => {
+          if (icon.dataset.sbcpVisualIcon === 'true') return;
+          if (icon.getAttribute('icon') !== 'mdi:solar-power') return;
+          icon.dataset.sbcpVisualIcon = 'true';
+          icon.style.display = 'block';
+          icon.style.width = '20px';
+          icon.style.height = '20px';
+          icon.style.lineHeight = '0';
+          icon.style.color = 'currentColor';
+          icon.innerHTML = solarIconSvg;
+        });
+      });
+    };
+
+    const makeCardConfig = (name) => ({
+      type: 'custom:sensor-bar-card-plus',
+      layout: {
+        height: 40,
+        label: {
+          position: 'above',
+        },
+      },
+      formatting: {
+        decimal: 1,
+      },
+      scale: {
+        min: { fixed: 0 },
+        max: { fixed: 10 },
+      },
+      bar: {
+        needle: true,
+        fill_style: 'gradient',
+        gradient_stops: gradientStops,
+      },
+      entities: [
+        {
+          entity: 'sensor.sbcp_hero_shot_solar',
+          name,
+          icon: 'mdi:solar-power',
+          scale: {
+            min: { fixed: 0 },
+            max: { fixed: 10 },
+          },
+        },
+      ],
+    });
+
+    const addSection = (columns, heading, name) => {
+      const section = document.createElement('section');
+      section.style.display = 'flex';
+      section.style.flexDirection = 'column';
+      section.style.gap = '8px';
+
+      const title = document.createElement('div');
+      title.textContent = heading;
+      title.style.fontSize = '12px';
+      title.style.fontWeight = '700';
+      title.style.letterSpacing = '0.08em';
+      title.style.textTransform = 'uppercase';
+      title.style.color = '#94a3b8';
+      section.appendChild(title);
+
+      const grid = document.createElement('div');
+      grid.style.display = 'grid';
+      grid.style.gridTemplateColumns = `repeat(${columns}, minmax(0, 1fr))`;
+      grid.style.gap = '12px';
+
+      for (let index = 0; index < columns; index += 1) {
+        const card = document.createElement('sensor-bar-card-plus');
+        card.setConfig(makeCardConfig(name));
+        card.hass = { states };
+        grid.appendChild(card);
+      }
+
+      section.appendChild(grid);
+      mount.appendChild(section);
+    };
+
+    addSection(1, '1 card full width', 'Solar Production South Roof');
+    addSection(2, '2 cards in a row', 'Solar Production');
+    addSection(3, '3 cards in a row', 'Solar Production');
+    addSection(4, '4 cards in a row', 'Solar Production');
+    addSection(5, '5 cards in a row', 'Solar Production');
+    addSection(6, '6 cards in a row', 'Solar Production');
+
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    decorateHarnessIcons();
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  });
+
+  await expect(page.locator('#mount')).toHaveScreenshot('above-label-responsive-stack.png');
 });

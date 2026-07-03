@@ -2111,6 +2111,9 @@
           display: inline-flex;
           align-items: baseline;
         }
+        .bar-inner-label .inside-value[data-hide-value="true"] {
+          display: none;
+        }
         .main-line.inside-mode[data-hide-inside-icon="true"] .bar-inner-label .inside-value,
         .main-line.inside-mode[data-priority-hide-inside-icon="true"] .bar-inner-label .inside-value,
         .bar-inner-label[data-hide-name="true"] .inside-value,
@@ -2180,10 +2183,15 @@
           transition: left 0.6s cubic-bezier(0.4,0,0.2,1);
         }
         .above-line {
-          display: flex;
-          gap: var(--sbcp-above-gap);
+          display: grid;
+          grid-template-columns: var(--sbcp-icon-width) minmax(0, 1fr);
+          column-gap: var(--sbcp-main-gap);
           min-width: 0;
           align-items: flex-end;
+        }
+        .above-line[data-hide-above-icon="true"],
+        .above-line[data-above-density="compressed"] {
+          grid-template-columns: minmax(0, 1fr);
         }
         .above-bar-label[data-hide-name="true"] .above-bar-label-name,
         .above-bar-label[data-priority-hide-name="true"] .above-bar-label-name,
@@ -2194,7 +2202,8 @@
           display: none;
         }
         .above-icon-spacer {
-          flex: 0 0 var(--sbcp-icon-width);
+          width: var(--sbcp-icon-width);
+          min-width: 0;
         }
         .above-bar-label {
           flex: 1;
@@ -2701,7 +2710,8 @@
             const trackWidth = track.getBoundingClientRect().width;
             const valueDisplay = this._decodeDataAttr(valueEl.dataset.display || valueEl.textContent || "");
             const valueUnit = this._decodeDataAttr(valueEl.dataset.unit || ((_a = valueEl.querySelector(".inside-unit")) == null ? void 0 : _a.textContent) || "");
-            const valueWidth = this._measureInsideValueMarkupWidth(valueEl, valueDisplay, valueUnit);
+            const valueWidth = this._measureInsideValueMarkupWidth(valueEl, valueDisplay, valueUnit, false);
+            const valueOnlyWidth = this._measureInsideValueMarkupWidth(valueEl, valueDisplay, valueUnit, true);
             let density = this._classifyInsideDensity(trackWidth, valueWidth);
             const rowWidth = typeof (mainLine == null ? void 0 : mainLine.getBoundingClientRect) === "function" ? mainLine.getBoundingClientRect().width : 0;
             const rowDensity = this._isReliableWidth(rowWidth) ? this._classifyRowDensity(rowWidth, ((_b = mainLine == null ? void 0 : mainLine.dataset) == null ? void 0 : _b.rowDensity) || "normal") : ((_c = mainLine == null ? void 0 : mainLine.dataset) == null ? void 0 : _c.rowDensity) || "normal";
@@ -2727,8 +2737,13 @@
             } else if (hideName && density === "normal") {
               density = "dense";
             }
+            const valueCap = this._getInsideValueVisibleCap(effectiveTrackWidth, density);
+            const hideUnit = !!valueUnit && valueWidth > valueCap;
+            const hideValue = valueOnlyWidth > valueCap;
             innerLabel.dataset.insideDensity = density;
             innerLabel.dataset.hideName = hideName ? "true" : "false";
+            valueEl.dataset.hideUnit = hideUnit ? "true" : "false";
+            valueEl.dataset.hideValue = hideValue ? "true" : "false";
             if (mainLine) {
               mainLine.dataset.hideInsideIcon = hideIcon ? "true" : "false";
             }
@@ -2762,6 +2777,7 @@
         _applyAboveLabelDensity() {
           if (!this.shadowRoot) return;
           this.shadowRoot.querySelectorAll(".above-line, .hero-line").forEach((aboveLine) => {
+            var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t;
             const label = aboveLine.querySelector(".above-bar-label, .hero-header");
             if (!label) return;
             const isHeroLine = aboveLine.classList.contains("hero-line");
@@ -2779,7 +2795,54 @@
               return;
             }
             aboveLine.dataset.aboveDensity = density;
-            label.dataset.hideName = density === "dense" || density === "compressed" ? "true" : "false";
+            const labelText = typeof label.querySelector === "function" ? label.querySelector(".above-bar-label-name") : null;
+            const valueEl = typeof label.querySelector === "function" ? label.querySelector(".above-bar-label-value") : null;
+            const display = this._decodeDataAttr(((_a = valueEl == null ? void 0 : valueEl.dataset) == null ? void 0 : _a.display) || "");
+            const unit = this._decodeDataAttr(((_b = valueEl == null ? void 0 : valueEl.dataset) == null ? void 0 : _b.unit) || "");
+            const row = (_c = aboveLine.closest) == null ? void 0 : _c.call(aboveLine, ".row");
+            const mainLine = (_d = row == null ? void 0 : row.querySelector) == null ? void 0 : _d.call(row, ".main-line.above-mode");
+            const rowDensity = ((_e = mainLine == null ? void 0 : mainLine.dataset) == null ? void 0 : _e.rowDensity) || "normal";
+            const iconWrap = (_g = (_f = mainLine == null ? void 0 : mainLine.querySelector) == null ? void 0 : _f.call(mainLine, ".icon-wrap")) != null ? _g : null;
+            const iconRect = (_h = iconWrap == null ? void 0 : iconWrap.getBoundingClientRect) == null ? void 0 : _h.call(iconWrap);
+            const iconStyle = iconWrap && typeof getComputedStyle === "function" ? getComputedStyle(iconWrap) : null;
+            const mainIconVisible = !!iconWrap && rowDensity !== "compressed" && (iconStyle == null ? void 0 : iconStyle.display) !== "none" && ((_i = iconRect == null ? void 0 : iconRect.width) != null ? _i : 0) > 0 && ((_j = iconRect == null ? void 0 : iconRect.height) != null ? _j : 0) > 0;
+            let hideName = density === "dense" || density === "compressed";
+            let hideSpacer = !mainIconVisible;
+            if (labelText && valueEl && display) {
+              const rowStack = (_k = aboveLine.closest) == null ? void 0 : _k.call(aboveLine, ".row-stack");
+              const lineWidth = (_o = (_n = (_l = rowStack == null ? void 0 : rowStack.getBoundingClientRect) == null ? void 0 : _l.call(rowStack).width) != null ? _n : (_m = aboveLine.getBoundingClientRect) == null ? void 0 : _m.call(aboveLine).width) != null ? _o : width;
+              const spacerEl = typeof aboveLine.querySelector === "function" ? aboveLine.querySelector(".above-icon-spacer") : null;
+              const spacerWidth = (_q = (_p = spacerEl == null ? void 0 : spacerEl.getBoundingClientRect) == null ? void 0 : _p.call(spacerEl).width) != null ? _q : 0;
+              const lineGap = spacerEl ? this._getNumericStyleValue(aboveLine, "gap", 0) : 0;
+              const nameWidth = (_t = (_s = (_r = labelText.getBoundingClientRect) == null ? void 0 : _r.call(labelText).width) != null ? _s : labelText.clientWidth) != null ? _t : 0;
+              const labelGap = this._getNumericStyleValue(label, "gap", this._getLeftModeGap(aboveLine));
+              const fullValueWidth = Math.ceil(this._measureValueMarkupWidth(valueEl, display, unit, false) + 2);
+              const valueOnlyWidth = Math.ceil(this._measureValueMarkupWidth(valueEl, display, unit, true) + 2);
+              const text = (labelText.textContent || "").trim();
+              const visibleWidth = labelText.clientWidth;
+              const fullWidth = labelText.scrollWidth;
+              const visibleChars = this._measureVisibleLabelCharacters(labelText, text, visibleWidth);
+              const labelIsUnhelpful = this._shouldHideLeftLabel(text, fullWidth, visibleWidth, visibleChars);
+              const spacerReserve = mainIconVisible && spacerWidth > 0 ? spacerWidth + lineGap : 0;
+              const availableWithName = Math.max(0, lineWidth - spacerReserve - nameWidth - labelGap);
+              const availableValueOnly = Math.max(0, lineWidth);
+              hideName = labelIsUnhelpful;
+              if (!hideName && fullValueWidth <= availableWithName) {
+                hideSpacer = !mainIconVisible;
+              } else if (!hideName && valueOnlyWidth <= availableWithName) {
+                hideSpacer = !mainIconVisible;
+              } else {
+                hideName = true;
+                hideSpacer = true;
+              }
+              const availableWidth = hideName ? availableValueOnly : availableWithName;
+              const hideUnit = !!unit && fullValueWidth > availableWidth;
+              valueEl.dataset.hideUnit = hideUnit ? "true" : "false";
+            } else if (valueEl) {
+              valueEl.dataset.hideUnit = "false";
+            }
+            label.dataset.hideName = hideName ? "true" : "false";
+            aboveLine.dataset.hideAboveIcon = hideSpacer ? "true" : "false";
           });
         }
         _getHeroDensityWidth(heroLine) {
@@ -2920,7 +2983,7 @@
           layer.replaceChildren(clone);
           return clone.scrollWidth;
         }
-        _measureInsideValueMarkupWidth(valueEl, display, unit) {
+        _measureInsideValueMarkupWidth(valueEl, display, unit, hideUnit = false) {
           var _a;
           const layer = (_a = this.shadowRoot) == null ? void 0 : _a.querySelector(".measure-layer");
           if (!layer || !valueEl) return (valueEl == null ? void 0 : valueEl.scrollWidth) || 0;
@@ -2932,7 +2995,7 @@
           clone.style.overflow = "visible";
           clone.style.textOverflow = "clip";
           clone.style.whiteSpace = "nowrap";
-          clone.innerHTML = this._formatInsideValueMarkup(display, unit);
+          clone.innerHTML = this._formatInsideValueMarkup(display, unit, hideUnit);
           layer.replaceChildren(clone);
           return clone.scrollWidth;
         }
@@ -2997,12 +3060,33 @@
         }
         _applyValueVisibility() {
           if (!this.shadowRoot) return;
-          this.shadowRoot.querySelectorAll(".value-right").forEach((valueEl) => {
+          this.shadowRoot.querySelectorAll(".value-right, .top-right-value, .above-bar-label-value").forEach((valueEl) => {
+            var _a, _b, _c, _d;
             const display = this._decodeDataAttr(valueEl.dataset.display || "");
             const unit = this._decodeDataAttr(valueEl.dataset.unit || "");
-            if (valueEl.dataset.hideUnit !== "false") {
-              valueEl.dataset.hideUnit = "false";
-              valueEl.innerHTML = this._formatRightValueMarkup(display, unit, false);
+            let hideUnit = valueEl.dataset.hideUnit === "true";
+            const isAboveValue = (_a = valueEl.classList) == null ? void 0 : _a.contains("above-bar-label-value");
+            if (!isAboveValue && display) {
+              const availableWidth = (_d = (_c = (_b = valueEl.getBoundingClientRect) == null ? void 0 : _b.call(valueEl).width) != null ? _c : valueEl.clientWidth) != null ? _d : 0;
+              const fullValueWidth = Math.ceil(this._measureValueMarkupWidth(valueEl, display, unit, false) + 2);
+              hideUnit = !!unit && availableWidth > 0 ? fullValueWidth > availableWidth : false;
+              valueEl.dataset.hideUnit = hideUnit ? "true" : "false";
+            }
+            if (valueEl.innerHTML !== this._formatRightValueMarkup(display, unit, hideUnit)) {
+              valueEl.innerHTML = this._formatRightValueMarkup(display, unit, hideUnit);
+            }
+          });
+          this.shadowRoot.querySelectorAll(".inside-value").forEach((valueEl) => {
+            const display = this._decodeDataAttr(valueEl.dataset.display || "");
+            const unit = this._decodeDataAttr(valueEl.dataset.unit || "");
+            const hideUnit = valueEl.dataset.hideUnit === "true";
+            const hideValue = valueEl.dataset.hideValue === "true";
+            if (!hideValue && !display) return;
+            if (!valueEl.dataset.hideUnit) valueEl.dataset.hideUnit = "false";
+            if (!valueEl.dataset.hideValue) valueEl.dataset.hideValue = "false";
+            const nextMarkup = this._formatInsideValueMarkup(display, unit, hideUnit);
+            if (valueEl.innerHTML !== nextMarkup) {
+              valueEl.innerHTML = nextMarkup;
             }
           });
         }
@@ -3214,7 +3298,6 @@
           if (leftLabel) delete leftLabel.dataset.priorityHidden;
           if (aboveLabel) delete aboveLabel.dataset.priorityHideName;
           if (innerLabel) delete innerLabel.dataset.priorityHideName;
-          if (aboveLine) delete aboveLine.dataset.hideAboveIcon;
           if (!mainLine) return;
           delete mainLine.dataset.hideLeftIcon;
           delete mainLine.dataset.hideAboveIcon;
@@ -3379,6 +3462,7 @@
         _applyTopRightValueLayout() {
           if (!this.shadowRoot) return;
           this.shadowRoot.querySelectorAll(".main-line.left-mode").forEach((mainLine) => {
+            var _a, _b, _c, _d, _e;
             const rowStack = mainLine.closest(".row-stack");
             const inlineValue = mainLine.querySelector(".value-right");
             const topValue = rowStack == null ? void 0 : rowStack.querySelector(".top-right-value");
@@ -3391,7 +3475,11 @@
             topValue.dataset.display = inlineValue.dataset.display || "";
             topValue.dataset.unit = inlineValue.dataset.unit || "";
             topValue.dataset.hideUnit = "false";
-            topValue.innerHTML = this._formatRightValueMarkup(display, unit, false);
+            const availableWidth = (_e = (_d = (_c = (_a = rowStack.getBoundingClientRect) == null ? void 0 : _a.call(rowStack).width) != null ? _c : (_b = topValue.getBoundingClientRect) == null ? void 0 : _b.call(topValue).width) != null ? _d : topValue.clientWidth) != null ? _e : 0;
+            const fullValueWidth = display ? Math.ceil(this._measureValueMarkupWidth(topValue, display, unit, false) + 2) : 0;
+            const hideUnit = !!unit && availableWidth > 0 && fullValueWidth > availableWidth;
+            topValue.dataset.hideUnit = hideUnit ? "true" : "false";
+            topValue.innerHTML = this._formatRightValueMarkup(display, unit, hideUnit);
           });
         }
         _applyLeftLabelUsefulness() {
@@ -3528,12 +3616,12 @@
           const textClass = tightUnit ? "value-right-text tight-unit" : "value-right-text has-unit";
           return `<span class="${textClass}"><span class="value-right-number">${escapedDisplay}</span><span class="unit-group"><span class="unit">${escapedUnit}</span></span></span>`;
         }
-        _formatAboveValueMarkup(display, unit) {
-          return `<span class="above-bar-label-value">${this._formatRightValueMarkup(display, unit, false)}</span>`;
+        _formatAboveValueMarkup(display, unit, hideUnit = false) {
+          return `<span class="above-bar-label-value" data-display="${this._encodeDataAttr(display)}" data-unit="${this._encodeDataAttr(unit)}" data-hide-unit="${hideUnit ? "true" : "false"}">${this._formatRightValueMarkup(display, unit, hideUnit)}</span>`;
         }
-        _formatInsideValueMarkup(display, unit) {
+        _formatInsideValueMarkup(display, unit, hideUnit = false) {
           const escapedDisplay = escapeHtml(display);
-          if (!unit) return `<span class="inside-value-text"><span class="inside-number">${escapedDisplay}</span></span>`;
+          if (!unit || hideUnit) return `<span class="inside-value-text"><span class="inside-number">${escapedDisplay}</span></span>`;
           const cleanUnit = String(unit);
           const escapedUnit = escapeHtml(cleanUnit);
           const unitModeClass = this._isTightUnit(cleanUnit) ? "tight-unit" : "has-unit";
@@ -3595,7 +3683,7 @@
         ${ecfg.icon && ecfg.icon !== false ? `<div class="above-icon-spacer"></div>` : ""}
         <div class="above-bar-label">
           <span class="above-bar-label-name label-left-text">${escapedName}</span>
-          ${this._formatAboveValueMarkup(stateDisplay, unit)}
+          ${this._formatAboveValueMarkup(stateDisplay, unit, false)}
         </div>
       </div>` : "";
           const heroSize = (_q = layout.label.hero_size) != null ? _q : "small";
@@ -3609,7 +3697,7 @@
           const innerLabel = lp === "inside" ? `
       <div class="bar-inner-label">
         <span class="inside-name">${escapedName}</span>
-        <span class="inside-value" data-display="${this._encodeDataAttr(stateDisplay)}" data-unit="${this._encodeDataAttr(unit)}">${this._formatInsideValueMarkup(stateDisplay, unit)}</span>
+        <span class="inside-value" data-display="${this._encodeDataAttr(stateDisplay)}" data-unit="${this._encodeDataAttr(unit)}" data-hide-unit="false" data-hide-value="false">${this._formatInsideValueMarkup(stateDisplay, unit, false)}</span>
       </div>` : "";
           const leftLabel = lp === "left" ? `<div class="label-left" style="flex:0 1 min(${layout.label.width}px, var(--sbcp-left-label-share));max-width:min(${layout.label.width}px, var(--sbcp-left-label-share));"><span class="label-left-text">${escapedName}</span></div>` : "";
           const rightValue = lp !== "inside" && lp !== "above" && lp !== "hero" ? `<div class="value-right" data-display="${this._encodeDataAttr(stateDisplay)}" data-unit="${this._encodeDataAttr(unit)}" data-hide-unit="false">${this._formatRightValueMarkup(stateDisplay, unit, false)}</div>` : "";
@@ -3714,7 +3802,9 @@ ${paintLayers}
             if (valueSpan) {
               valueSpan.dataset.display = this._encodeDataAttr(display);
               valueSpan.dataset.unit = this._encodeDataAttr(displayUnit);
-              valueSpan.innerHTML = this._formatInsideValueMarkup(display, displayUnit);
+              valueSpan.dataset.hideUnit = "false";
+              valueSpan.dataset.hideValue = "false";
+              valueSpan.innerHTML = this._formatInsideValueMarkup(display, displayUnit, false);
             }
           }
           const heroHeader = row.querySelector(".hero-header");
@@ -3723,7 +3813,7 @@ ${paintLayers}
           }
           const aboveLabel = heroHeader ? null : row.querySelector(".above-bar-label");
           if (aboveLabel) {
-            aboveLabel.innerHTML = `<span class="above-bar-label-name label-left-text">${escapeHtml(rowViewModel.name)}</span>${this._formatAboveValueMarkup(display, displayUnit)}`;
+            aboveLabel.innerHTML = `<span class="above-bar-label-name label-left-text">${escapeHtml(rowViewModel.name)}</span>${this._formatAboveValueMarkup(display, displayUnit, false)}`;
           }
           if (ecfg.peak_marker.show && Number.isFinite(rawVal)) {
             const key = entityCfg.entity;

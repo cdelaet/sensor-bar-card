@@ -2928,6 +2928,78 @@ describe('Sensor Bar Card Plus logic', () => {
     expect(card._formatInsideValueMarkup('72', 'W')).toContain('<span class="inside-unit">W</span>');
   });
 
+  it('inside mode hides the unit before hiding the value pill when the number still fits', () => {
+    const card = createCard();
+    card._measureInsideValueMarkupWidth = (_el, _display, _unit, hideUnit) => hideUnit ? 60 : 100;
+    const mainLine = {
+      dataset: { rowDensity: 'normal' },
+      querySelector: () => null,
+    };
+    const track = { getBoundingClientRect: () => ({ width: 160 }) };
+    const valueEl = {
+      dataset: { display: '5089.2', unit: 'W' },
+      querySelector: () => null,
+    };
+    const innerLabel = {
+      dataset: {},
+      closest: (selector) => (
+        selector === '.bar-track' ? track
+          : selector === '.main-line' ? mainLine
+          : null
+      ),
+      querySelector: (selector) => (
+        selector === '.inside-name' ? {}
+          : selector === '.inside-value' ? valueEl
+          : null
+      ),
+    };
+    card.shadowRoot = {
+      querySelectorAll: (selector) => selector === '.bar-inner-label' ? [innerLabel] : [],
+      querySelector: () => null,
+    };
+
+    card._applyInsideLabelDensity();
+
+    expect(valueEl.dataset.hideUnit).toBe('true');
+    expect(valueEl.dataset.hideValue).toBe('false');
+  });
+
+  it('inside mode hides the whole value pill when the numeric value alone cannot fit', () => {
+    const card = createCard();
+    card._measureInsideValueMarkupWidth = (_el, _display, _unit, hideUnit) => hideUnit ? 70 : 90;
+    const mainLine = {
+      dataset: { rowDensity: 'normal' },
+      querySelector: () => null,
+    };
+    const track = { getBoundingClientRect: () => ({ width: 60 }) };
+    const valueEl = {
+      dataset: { display: '5089.2', unit: 'W' },
+      querySelector: () => null,
+    };
+    const innerLabel = {
+      dataset: {},
+      closest: (selector) => (
+        selector === '.bar-track' ? track
+          : selector === '.main-line' ? mainLine
+          : null
+      ),
+      querySelector: (selector) => (
+        selector === '.inside-name' ? {}
+          : selector === '.inside-value' ? valueEl
+          : null
+      ),
+    };
+    card.shadowRoot = {
+      querySelectorAll: (selector) => selector === '.bar-inner-label' ? [innerLabel] : [],
+      querySelector: () => null,
+    };
+
+    card._applyInsideLabelDensity();
+
+    expect(valueEl.dataset.hideUnit).toBe('true');
+    expect(valueEl.dataset.hideValue).toBe('true');
+  });
+
   it('inside mode hides the icon while keeping the value visible at dense density', () => {
     const card = createCard();
     card._measureInsideValueMarkupWidth = () => 52;
@@ -3171,6 +3243,93 @@ describe('Sensor Bar Card Plus logic', () => {
     expect(card._formatAboveValueMarkup('72', 'W')).toContain('<span class="unit">W</span>');
   });
 
+  it('above mode hides the label when it interferes with the numeric value width', () => {
+    const card = createCard();
+    card._measureValueMarkupWidth = (_el, _display, _unit, hideUnit) => hideUnit ? 44 : 58;
+    card._measureVisibleLabelCharacters = () => 6;
+    const labelText = {
+      textContent: 'Very long label',
+      clientWidth: 38,
+      scrollWidth: 90,
+      getBoundingClientRect: () => ({ width: 38 }),
+    };
+    const valueEl = {
+      dataset: { display: '5089.2', unit: 'W', hideUnit: 'false' },
+      classList: { contains: (name) => name === 'above-bar-label-value' },
+    };
+    const label = {
+      dataset: {},
+      getBoundingClientRect: () => ({ width: 80 }),
+      querySelector: (selector) => (
+        selector === '.above-bar-label-name' ? labelText
+          : selector === '.above-bar-label-value' ? valueEl
+          : null
+      ),
+    };
+    const aboveLine = {
+      classList: { contains: () => false },
+      dataset: {},
+      querySelector: (selector) => selector === '.above-bar-label, .hero-header' ? label : null,
+    };
+    card.shadowRoot = {
+      querySelectorAll: (selector) => selector === '.above-line, .hero-line' ? [aboveLine] : [],
+      querySelector: () => null,
+    };
+
+    card._applyAboveLabelDensity();
+
+    expect(label.dataset.hideName).toBe('true');
+    expect(valueEl.dataset.hideUnit).toBe('false');
+  });
+
+  it('above mode hides the unit before clipping the numeric value at very narrow widths', () => {
+    const card = createCard();
+    card._measureValueMarkupWidth = (_el, _display, _unit, hideUnit) => hideUnit ? 34 : 52;
+    card._measureVisibleLabelCharacters = () => 4;
+    const labelText = {
+      textContent: 'Grid import export label',
+      clientWidth: 18,
+      scrollWidth: 120,
+      getBoundingClientRect: () => ({ width: 18 }),
+    };
+    const valueEl = {
+      dataset: { display: '5089.2', unit: 'W', hideUnit: 'false' },
+      classList: { contains: (name) => name === 'above-bar-label-value' },
+      innerHTML: '',
+    };
+    const label = {
+      dataset: {},
+      getBoundingClientRect: () => ({ width: 44 }),
+      querySelector: (selector) => (
+        selector === '.above-bar-label-name' ? labelText
+          : selector === '.above-bar-label-value' ? valueEl
+          : null
+      ),
+    };
+    const aboveLine = {
+      classList: { contains: () => false },
+      dataset: {},
+      querySelector: (selector) => selector === '.above-bar-label, .hero-header' ? label : null,
+    };
+    card.shadowRoot = {
+      querySelectorAll: (selector) => {
+        if (selector === '.above-line, .hero-line') return [aboveLine];
+        if (selector === '.value-right, .top-right-value, .above-bar-label-value') return [valueEl];
+        if (selector === '.inside-value') return [];
+        return [];
+      },
+      querySelector: () => null,
+    };
+
+    card._applyAboveLabelDensity();
+    card._applyValueVisibility();
+
+    expect(label.dataset.hideName).toBe('true');
+    expect(valueEl.dataset.hideUnit).toBe('true');
+    expect(valueEl.innerHTML).toContain('value-right-number');
+    expect(valueEl.innerHTML).not.toContain('<span class="unit">W</span>');
+  });
+
   it('hero mode hides the label on narrow densities before sacrificing the value group', () => {
     const card = createCard();
     const tightLabel = { dataset: {}, getBoundingClientRect: () => ({ width: 185 }) };
@@ -3298,7 +3457,7 @@ describe('Sensor Bar Card Plus logic', () => {
     );
 
     expect(html).toContain('class="above-bar-label-name label-left-text"');
-    expect(html).toContain('class="above-bar-label-value"><span class="value-right-text has-unit"');
+    expect(html).toContain('class="above-bar-label-value" data-display="72" data-unit="W" data-hide-unit="false"><span class="value-right-text has-unit"');
     expect(html).toContain('<span class="value-right-number">72</span>');
     expect(html).toContain('<span class="unit">W</span>');
   });
@@ -4134,6 +4293,37 @@ describe('Sensor Bar Card Plus logic', () => {
     expect(topValue.dataset.active).toBe('true');
   });
 
+  it('left mode hides the unit before clipping the numeric value when the inline slot is narrow', () => {
+    const card = createCard();
+    card._measureValueMarkupWidth = (_el, _display, _unit, hideUnit) => hideUnit ? 34 : 52;
+    const valueEl = {
+      dataset: {
+        display: encodeURIComponent('5089.2'),
+        unit: encodeURIComponent('W'),
+        hideUnit: 'false',
+      },
+      innerHTML: '',
+      clientWidth: 38,
+      getBoundingClientRect: () => ({ width: 38 }),
+      classList: { contains: () => false },
+    };
+
+    card.shadowRoot = {
+      querySelectorAll: (selector) => {
+        if (selector === '.value-right, .top-right-value, .above-bar-label-value') return [valueEl];
+        if (selector === '.inside-value') return [];
+        return [];
+      },
+      querySelector: () => null,
+    };
+
+    card._applyValueVisibility();
+
+    expect(valueEl.dataset.hideUnit).toBe('true');
+    expect(valueEl.innerHTML).toContain('value-right-number');
+    expect(valueEl.innerHTML).not.toContain('<span class="unit">W</span>');
+  });
+
   it('keeps value and unit together in the top-right row', () => {
     const card = createCard();
     const html = card._buildRow(
@@ -4178,7 +4368,11 @@ describe('Sensor Bar Card Plus logic', () => {
     };
 
     card.shadowRoot = {
-      querySelectorAll: (selector) => selector === '.value-right' ? [valueEl] : [],
+      querySelectorAll: (selector) => {
+        if (selector === '.value-right, .top-right-value, .above-bar-label-value') return [valueEl];
+        if (selector === '.inside-value') return [];
+        return [];
+      },
       querySelector: () => null,
     };
 

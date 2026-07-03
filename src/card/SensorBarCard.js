@@ -1440,6 +1440,9 @@ _getAboveTargetLayerGeometry(targetPct = null) {
           display: inline-flex;
           align-items: baseline;
         }
+        .bar-inner-label .inside-value[data-hide-value="true"] {
+          display: none;
+        }
         .main-line.inside-mode[data-hide-inside-icon="true"] .bar-inner-label .inside-value,
         .main-line.inside-mode[data-priority-hide-inside-icon="true"] .bar-inner-label .inside-value,
         .bar-inner-label[data-hide-name="true"] .inside-value,
@@ -1509,10 +1512,15 @@ _getAboveTargetLayerGeometry(targetPct = null) {
           transition: left 0.6s cubic-bezier(0.4,0,0.2,1);
         }
         .above-line {
-          display: flex;
-          gap: var(--sbcp-above-gap);
+          display: grid;
+          grid-template-columns: var(--sbcp-icon-width) minmax(0, 1fr);
+          column-gap: var(--sbcp-main-gap);
           min-width: 0;
           align-items: flex-end;
+        }
+        .above-line[data-hide-above-icon="true"],
+        .above-line[data-above-density="compressed"] {
+          grid-template-columns: minmax(0, 1fr);
         }
         .above-bar-label[data-hide-name="true"] .above-bar-label-name,
         .above-bar-label[data-priority-hide-name="true"] .above-bar-label-name,
@@ -1523,7 +1531,8 @@ _getAboveTargetLayerGeometry(targetPct = null) {
           display: none;
         }
         .above-icon-spacer {
-          flex: 0 0 var(--sbcp-icon-width);
+          width: var(--sbcp-icon-width);
+          min-width: 0;
         }
         .above-bar-label {
           flex: 1;
@@ -2051,7 +2060,8 @@ _getAboveTargetLayerGeometry(targetPct = null) {
       const trackWidth = track.getBoundingClientRect().width;
       const valueDisplay = this._decodeDataAttr(valueEl.dataset.display || valueEl.textContent || '');
       const valueUnit = this._decodeDataAttr(valueEl.dataset.unit || valueEl.querySelector('.inside-unit')?.textContent || '');
-      const valueWidth = this._measureInsideValueMarkupWidth(valueEl, valueDisplay, valueUnit);
+      const valueWidth = this._measureInsideValueMarkupWidth(valueEl, valueDisplay, valueUnit, false);
+      const valueOnlyWidth = this._measureInsideValueMarkupWidth(valueEl, valueDisplay, valueUnit, true);
       let density = this._classifyInsideDensity(trackWidth, valueWidth);
       const rowWidth = typeof mainLine?.getBoundingClientRect === 'function'
         ? mainLine.getBoundingClientRect().width
@@ -2088,8 +2098,13 @@ _getAboveTargetLayerGeometry(targetPct = null) {
         density = 'dense';
       }
 
+      const valueCap = this._getInsideValueVisibleCap(effectiveTrackWidth, density);
+      const hideUnit = !!valueUnit && valueWidth > valueCap;
+      const hideValue = valueOnlyWidth > valueCap;
       innerLabel.dataset.insideDensity = density;
       innerLabel.dataset.hideName = hideName ? 'true' : 'false';
+      valueEl.dataset.hideUnit = hideUnit ? 'true' : 'false';
+      valueEl.dataset.hideValue = hideValue ? 'true' : 'false';
       if (mainLine) {
         mainLine.dataset.hideInsideIcon = hideIcon ? 'true' : 'false';
       }
@@ -2146,7 +2161,70 @@ _getAboveTargetLayerGeometry(targetPct = null) {
         return;
       }
       aboveLine.dataset.aboveDensity = density;
-      label.dataset.hideName = density === 'dense' || density === 'compressed' ? 'true' : 'false';
+      const labelText = typeof label.querySelector === 'function' ? label.querySelector('.above-bar-label-name') : null;
+      const valueEl = typeof label.querySelector === 'function' ? label.querySelector('.above-bar-label-value') : null;
+      const display = this._decodeDataAttr(valueEl?.dataset?.display || '');
+      const unit = this._decodeDataAttr(valueEl?.dataset?.unit || '');
+      const row = aboveLine.closest?.('.row');
+      const mainLine = row?.querySelector?.('.main-line.above-mode');
+      const rowDensity = mainLine?.dataset?.rowDensity || 'normal';
+      const iconWrap = mainLine?.querySelector?.('.icon-wrap') ?? null;
+      const iconRect = iconWrap?.getBoundingClientRect?.();
+      const iconStyle = iconWrap && typeof getComputedStyle === 'function'
+        ? getComputedStyle(iconWrap)
+        : null;
+      const mainIconVisible = !!iconWrap
+        && rowDensity !== 'compressed'
+        && iconStyle?.display !== 'none'
+        && (iconRect?.width ?? 0) > 0
+        && (iconRect?.height ?? 0) > 0;
+      let hideName = density === 'dense' || density === 'compressed';
+      let hideSpacer = !mainIconVisible;
+
+      if (labelText && valueEl && display) {
+        const rowStack = aboveLine.closest?.('.row-stack');
+        const lineWidth = rowStack?.getBoundingClientRect?.().width
+          ?? aboveLine.getBoundingClientRect?.().width
+          ?? width;
+        const spacerEl = typeof aboveLine.querySelector === 'function' ? aboveLine.querySelector('.above-icon-spacer') : null;
+        const spacerWidth = spacerEl?.getBoundingClientRect?.().width ?? 0;
+        const lineGap = spacerEl ? this._getNumericStyleValue(aboveLine, 'gap', 0) : 0;
+        const nameWidth = labelText.getBoundingClientRect?.().width ?? labelText.clientWidth ?? 0;
+        const labelGap = this._getNumericStyleValue(label, 'gap', this._getLeftModeGap(aboveLine));
+        const fullValueWidth = Math.ceil(this._measureValueMarkupWidth(valueEl, display, unit, false) + 2);
+        const valueOnlyWidth = Math.ceil(this._measureValueMarkupWidth(valueEl, display, unit, true) + 2);
+        const text = (labelText.textContent || '').trim();
+        const visibleWidth = labelText.clientWidth;
+        const fullWidth = labelText.scrollWidth;
+        const visibleChars = this._measureVisibleLabelCharacters(labelText, text, visibleWidth);
+        const labelIsUnhelpful = this._shouldHideLeftLabel(text, fullWidth, visibleWidth, visibleChars);
+
+        const spacerReserve = mainIconVisible && spacerWidth > 0 ? spacerWidth + lineGap : 0;
+        const availableWithName = Math.max(0, lineWidth - spacerReserve - nameWidth - labelGap);
+        const availableValueOnly = Math.max(0, lineWidth);
+
+        hideName = labelIsUnhelpful;
+
+        if (!hideName && fullValueWidth <= availableWithName) {
+          hideSpacer = !mainIconVisible;
+        } else if (!hideName && valueOnlyWidth <= availableWithName) {
+          hideSpacer = !mainIconVisible;
+        } else {
+          hideName = true;
+          hideSpacer = true;
+        }
+
+        const availableWidth = hideName
+          ? availableValueOnly
+          : availableWithName;
+        const hideUnit = !!unit && fullValueWidth > availableWidth;
+        valueEl.dataset.hideUnit = hideUnit ? 'true' : 'false';
+      } else if (valueEl) {
+        valueEl.dataset.hideUnit = 'false';
+      }
+
+      label.dataset.hideName = hideName ? 'true' : 'false';
+      aboveLine.dataset.hideAboveIcon = hideSpacer ? 'true' : 'false';
     });
   }
 
@@ -2309,7 +2387,7 @@ _getAboveTargetLayerGeometry(targetPct = null) {
     return clone.scrollWidth;
   }
 
-  _measureInsideValueMarkupWidth(valueEl, display, unit) {
+  _measureInsideValueMarkupWidth(valueEl, display, unit, hideUnit = false) {
     const layer = this.shadowRoot?.querySelector('.measure-layer');
     if (!layer || !valueEl) return valueEl?.scrollWidth || 0;
     const clone = valueEl.cloneNode(false);
@@ -2320,7 +2398,7 @@ _getAboveTargetLayerGeometry(targetPct = null) {
     clone.style.overflow = 'visible';
     clone.style.textOverflow = 'clip';
     clone.style.whiteSpace = 'nowrap';
-    clone.innerHTML = this._formatInsideValueMarkup(display, unit);
+    clone.innerHTML = this._formatInsideValueMarkup(display, unit, hideUnit);
     layer.replaceChildren(clone);
     return clone.scrollWidth;
   }
@@ -2393,13 +2471,36 @@ _getAboveTargetLayerGeometry(targetPct = null) {
 
   _applyValueVisibility() {
     if (!this.shadowRoot) return;
-    this.shadowRoot.querySelectorAll('.value-right').forEach(valueEl => {
+    this.shadowRoot.querySelectorAll('.value-right, .top-right-value, .above-bar-label-value').forEach(valueEl => {
       const display = this._decodeDataAttr(valueEl.dataset.display || '');
       const unit = this._decodeDataAttr(valueEl.dataset.unit || '');
+      let hideUnit = valueEl.dataset.hideUnit === 'true';
+      const isAboveValue = valueEl.classList?.contains('above-bar-label-value');
 
-      if (valueEl.dataset.hideUnit !== 'false') {
-        valueEl.dataset.hideUnit = 'false';
-        valueEl.innerHTML = this._formatRightValueMarkup(display, unit, false);
+      if (!isAboveValue && display) {
+        const availableWidth = valueEl.getBoundingClientRect?.().width ?? valueEl.clientWidth ?? 0;
+        const fullValueWidth = Math.ceil(this._measureValueMarkupWidth(valueEl, display, unit, false) + 2);
+        hideUnit = !!unit && availableWidth > 0 ? fullValueWidth > availableWidth : false;
+        valueEl.dataset.hideUnit = hideUnit ? 'true' : 'false';
+      }
+
+      if (valueEl.innerHTML !== this._formatRightValueMarkup(display, unit, hideUnit)) {
+        valueEl.innerHTML = this._formatRightValueMarkup(display, unit, hideUnit);
+      }
+    });
+
+    this.shadowRoot.querySelectorAll('.inside-value').forEach(valueEl => {
+      const display = this._decodeDataAttr(valueEl.dataset.display || '');
+      const unit = this._decodeDataAttr(valueEl.dataset.unit || '');
+      const hideUnit = valueEl.dataset.hideUnit === 'true';
+      const hideValue = valueEl.dataset.hideValue === 'true';
+
+      if (!hideValue && !display) return;
+      if (!valueEl.dataset.hideUnit) valueEl.dataset.hideUnit = 'false';
+      if (!valueEl.dataset.hideValue) valueEl.dataset.hideValue = 'false';
+      const nextMarkup = this._formatInsideValueMarkup(display, unit, hideUnit);
+      if (valueEl.innerHTML !== nextMarkup) {
+        valueEl.innerHTML = nextMarkup;
       }
     });
   }
@@ -2649,7 +2750,6 @@ _getAboveTargetLayerGeometry(targetPct = null) {
     if (leftLabel) delete leftLabel.dataset.priorityHidden;
     if (aboveLabel) delete aboveLabel.dataset.priorityHideName;
     if (innerLabel) delete innerLabel.dataset.priorityHideName;
-    if (aboveLine) delete aboveLine.dataset.hideAboveIcon;
     if (!mainLine) return;
     delete mainLine.dataset.hideLeftIcon;
     delete mainLine.dataset.hideAboveIcon;
@@ -2853,7 +2953,13 @@ _getAboveTargetLayerGeometry(targetPct = null) {
       topValue.dataset.display = inlineValue.dataset.display || '';
       topValue.dataset.unit = inlineValue.dataset.unit || '';
       topValue.dataset.hideUnit = 'false';
-      topValue.innerHTML = this._formatRightValueMarkup(display, unit, false);
+      const availableWidth = rowStack.getBoundingClientRect?.().width ?? topValue.getBoundingClientRect?.().width ?? topValue.clientWidth ?? 0;
+      const fullValueWidth = display
+        ? Math.ceil(this._measureValueMarkupWidth(topValue, display, unit, false) + 2)
+        : 0;
+      const hideUnit = !!unit && availableWidth > 0 && fullValueWidth > availableWidth;
+      topValue.dataset.hideUnit = hideUnit ? 'true' : 'false';
+      topValue.innerHTML = this._formatRightValueMarkup(display, unit, hideUnit);
     });
   }
 
@@ -3019,13 +3125,13 @@ _getAboveTargetLayerGeometry(targetPct = null) {
     return `<span class="${textClass}"><span class="value-right-number">${escapedDisplay}</span><span class="unit-group"><span class="unit">${escapedUnit}</span></span></span>`;
   }
 
-  _formatAboveValueMarkup(display, unit) {
-    return `<span class="above-bar-label-value">${this._formatRightValueMarkup(display, unit, false)}</span>`;
+  _formatAboveValueMarkup(display, unit, hideUnit = false) {
+    return `<span class="above-bar-label-value" data-display="${this._encodeDataAttr(display)}" data-unit="${this._encodeDataAttr(unit)}" data-hide-unit="${hideUnit ? 'true' : 'false'}">${this._formatRightValueMarkup(display, unit, hideUnit)}</span>`;
   }
 
-  _formatInsideValueMarkup(display, unit) {
+  _formatInsideValueMarkup(display, unit, hideUnit = false) {
     const escapedDisplay = escapeHtml(display);
-    if (!unit) return `<span class="inside-value-text"><span class="inside-number">${escapedDisplay}</span></span>`;
+    if (!unit || hideUnit) return `<span class="inside-value-text"><span class="inside-number">${escapedDisplay}</span></span>`;
     const cleanUnit = String(unit);
     const escapedUnit = escapeHtml(cleanUnit);
     const unitModeClass = this._isTightUnit(cleanUnit) ? 'tight-unit' : 'has-unit';
@@ -3096,7 +3202,7 @@ _getAboveTargetLayerGeometry(targetPct = null) {
         ${ecfg.icon && ecfg.icon !== false ? `<div class="above-icon-spacer"></div>` : ''}
         <div class="above-bar-label">
           <span class="above-bar-label-name label-left-text">${escapedName}</span>
-          ${this._formatAboveValueMarkup(stateDisplay, unit)}
+          ${this._formatAboveValueMarkup(stateDisplay, unit, false)}
         </div>
       </div>` : '';
     const heroSize = layout.label.hero_size ?? 'small';
@@ -3111,7 +3217,7 @@ _getAboveTargetLayerGeometry(targetPct = null) {
     const innerLabel = lp === 'inside' ? `
       <div class="bar-inner-label">
         <span class="inside-name">${escapedName}</span>
-        <span class="inside-value" data-display="${this._encodeDataAttr(stateDisplay)}" data-unit="${this._encodeDataAttr(unit)}">${this._formatInsideValueMarkup(stateDisplay, unit)}</span>
+        <span class="inside-value" data-display="${this._encodeDataAttr(stateDisplay)}" data-unit="${this._encodeDataAttr(unit)}" data-hide-unit="false" data-hide-value="false">${this._formatInsideValueMarkup(stateDisplay, unit, false)}</span>
       </div>` : '';
 
     const leftLabel  = lp === 'left'
@@ -3229,7 +3335,9 @@ ${paintLayers}
       if (valueSpan) {
         valueSpan.dataset.display = this._encodeDataAttr(display);
         valueSpan.dataset.unit = this._encodeDataAttr(displayUnit);
-        valueSpan.innerHTML = this._formatInsideValueMarkup(display, displayUnit);
+        valueSpan.dataset.hideUnit = 'false';
+        valueSpan.dataset.hideValue = 'false';
+        valueSpan.innerHTML = this._formatInsideValueMarkup(display, displayUnit, false);
       }
     }
     const heroHeader = row.querySelector('.hero-header');
@@ -3238,7 +3346,7 @@ ${paintLayers}
     }
     const aboveLabel = heroHeader ? null : row.querySelector('.above-bar-label');
     if (aboveLabel) {
-      aboveLabel.innerHTML = `<span class="above-bar-label-name label-left-text">${escapeHtml(rowViewModel.name)}</span>${this._formatAboveValueMarkup(display, displayUnit)}`;
+      aboveLabel.innerHTML = `<span class="above-bar-label-name label-left-text">${escapeHtml(rowViewModel.name)}</span>${this._formatAboveValueMarkup(display, displayUnit, false)}`;
     }
 
     if (ecfg.peak_marker.show && Number.isFinite(rawVal)) {
