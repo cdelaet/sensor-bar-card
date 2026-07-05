@@ -19,15 +19,24 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v5
 
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      
+      - name: Install dependencies
+        run: npm ci
+      
       - name: Build dist
+        run: npm run build
+      
+      - name: Verify dist is bundled
         run: |
-          mkdir -p dist
-          cp src/sensor-bar-card-plus.js dist/sensor-bar-card-plus.js
-
-      - name: Verify dist is up to date
-        run: |
-          diff -u src/sensor-bar-card-plus.js dist/sensor-bar-card-plus.js
-
+          test -f dist/sensor-bar-card-plus.js
+          ! grep -q "from './card/SensorBarCard.js'" dist/sensor-bar-card-plus.js
+          ! grep -q "from './editor/SensorBarCardPlusEditor.js'" dist/sensor-bar-card-plus.js
+      
       - name: Upload release asset
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
