@@ -15,7 +15,7 @@ It supports classic reveal-fill bars, baseline-driven bidirectional flows, and f
 
 Ideal for energy monitoring, batteries, power flows, temperatures, quotas, environmental sensors, gauges, and other numeric data, Sensor Bar Card Plus combines dynamic scales, semantic fills, segment-based coloring, target and peak markers, needle indicators, and responsive layouts into a single highly configurable card.
 
-Now you have no excuse anymore to build that pretty dashboard. Go forth and look cool. -Chris
+Now you have no excuse not to build that pretty dashboard. Go forth and look cool. -Chris
 
 ![Sensor Bar Card Plus showcase](images/hero-400.gif)
 
@@ -122,6 +122,8 @@ What the Visual Editor supports:
 - entity management actions for move, duplicate, and remove
 - inheritance behavior where entity settings follow card settings until you change them
 - visible default bands and default gradients that stay out of emitted YAML until customized
+
+![Visual editor](images/visual-editor.png)
 
 The editor can configure the same structured layout options used in YAML, including Hero label mode and the Hero size presets. That means a new dashboard can start from the Home Assistant card picker, switch to Hero layout, choose a size, and still produce clean YAML behind the scenes.
 
@@ -279,7 +281,9 @@ Notes:
 
 ## Fill Styles
 
-Current color_mode compatibility values map directly to these fill styles.
+Current `color_mode` compatibility names map directly to these fill styles.
+
+If no fill style is specified, Sensor Bar Card Plus defaults to `bands`. This preserves visual compatibility with the original Sensor Bar Card, ensuring that existing dashboards continue to render as expected. New dashboards are encouraged to specify `bar.fill_style` explicitly, but doing so is optional.
 
 Sensor Bar Card Plus separates semantic fill composition from animated reveal geometry. That is what allows gradients, bands, above-target colors, markers, and animations to stay visually coherent while the bar updates.
 
@@ -536,6 +540,84 @@ bar:
   needle: true
 ```
 
+### Segment Space: `percent` vs `scale`
+
+`bar.segment_space` controls how `bar.segments` positions are interpreted.
+Use `percent` when segment boundaries should describe fixed positions across the visible bar. Use `scale` when segment boundaries should describe real values on the configured `scale.min` to `scale.max` range.
+
+#### Percent-space segments
+
+This is the default and the best choice for simple progress-style bars.
+
+```yaml
+type: custom:sensor-bar-card-plus
+title: Percent Segments
+bar:
+  fill_style: bands
+  segment_space: percent
+  segments:
+    - from: 0%
+      to: 50%
+      color: '#22c55e'
+    - from: 50%
+      to: 80%
+      color: '#facc15'
+    - from: 80%
+      to: 100%
+      color: '#ef4444'
+scale:
+  min:
+    fixed: 0
+  max:
+    fixed: 3000
+entities:
+  - entity: sensor.power_usage
+    name: Power
+```
+
+Here, the yellow band always starts halfway across the bar, regardless of whether the active scale is `0-100`, `0-3000`, or dynamically supplied by entities.
+
+#### Scale-space segments
+
+Use `scale` when segment boundaries are meaningful real values.
+
+```yaml
+type: custom:sensor-bar-card-plus
+title: Scale Segments
+bar:
+  fill_style: bands
+  segment_space: scale
+  segments:
+    - from: 0
+      to: 1000
+      color: '#22c55e'
+    - from: 1000
+      to: 2000
+      color: '#facc15'
+    - from: 2000
+      to: 3000
+      color: '#ef4444'
+scale:
+  min:
+    fixed: 0
+  max:
+    fixed: 3000
+entities:
+  - entity: sensor.power_usage
+    name: Power
+```
+
+Here, the yellow band begins at the real value `1000` on the configured scale. If the scale later changes, the segment positions are recalculated so the colors still represent the same real-world thresholds.
+
+#### When to use which
+
+|Mode|Best for|Segment values mean|
+|---|---|---|
+|`percent`|progress bars, quotas, generic utilization|positions from 0% to 100% across the bar|
+|`scale`|temperatures, power thresholds, CO₂ ranges, real sensor limits|actual values on the configured scale|
+
+For legacy severity migrations, `percent` is usually the correct choice because older severity bands were interpreted as percentages of the visible bar.
+
 ### `solid`
 
 Compatibility name: `single` 
@@ -634,7 +716,7 @@ layout:
 
 If omitted, `hero_size` defaults to `medium`.
 
-![Hero size comparison](images/example-hero-sizes.png)
+![Hero size comparison](images/hero-label-sizes.png)
 
 ```yaml
 type: custom:sensor-bar-card-plus
@@ -673,7 +755,7 @@ Hero label mode uses a dedicated responsive layout strategy that prioritizes the
 
 This prioritization keeps the most important information visible while preserving a stable, premium Hero appearance across a wide range of dashboard widths.
 
-![Hero responsive behavior](images/example-hero-responsive.png)
+![Hero responsive behavior](images/hero-label-responsive.png)
 
 The responsive behavior described above is specific to Hero label mode. The other label positions (`left`, `above`, `inside`, and `off`) continue to use the card's standard responsive layout.
 
@@ -681,9 +763,11 @@ The responsive behavior described above is specific to Hero label mode. The othe
 |---|---|---|
 | Main priority | Keep the large value readable | Keep the bar readable and aligned |
 | Label behavior | Truncate, then hide when the value needs space | Adapt with the row layout and may step aside in tight spaces |
-| Unit behavior | Hide only when the value still needs more space | Stays grouped with the value |
+| Unit behavior | Hide only when the value still needs more space | Stays visible as long as practical and is only hidden as a late fallback |
 | Icon behavior | Hides in the narrowest Hero layouts | May hide in tight layouts to preserve useful content |
 | Best use | Glanceable gauge-style dashboard values | Dense multi-row dashboards and detailed telemetry |
+
+![Above/left/inside responsive behavior](images/above-left-inside-responsive.png)
 
 Explicit `layout.height` is still respected exactly. The default row height may shrink automatically in very dense layouts.
 
@@ -813,7 +897,7 @@ target:
 
 Set `target.label.show: true` to render the numeric target below the marker. The label is clamped so it stays inside the track area near the edges and follows dynamic target changes smoothly.
 
-![Target value label](images/example-target-value-label.png)
+![Target value label](images/target-value-label.png)
 
 ### Peak marker example
 
@@ -1638,12 +1722,12 @@ Notes:
 | `fill_style` | Description |
 |---|---|
 | `solid` | One solid fill color; best for simple status or branded accents |
-| `gradient` | Continuous gradient from `bar.gradient_stops`. ⚠️ Note: Gradient stops are always set on scale from 0 to 100 where 0 represents the start the bar end 100 the end of the bar. To keep gradients working consistently, they cannot be set by absolute values. If you want to use absolute values, use a `band_gradient` instead. |
+| `gradient` | Continuous gradient from `bar.gradient_stops`. ⚠️ Note: Gradient stops are always defined on a normalized 0-100 scale, where 0 represents the start of the bar and 100 the end. To keep gradients working consistently, they cannot be set by absolute values. If you want to use absolute values, use a `band_gradient` instead. |
 | `bands` | Hard segment transitions using `bar.segments` |
 | `soft_bands` | Segment-based colors with short blended transitions at eligible boundaries |
 | `band_gradient` | Continuous interpolation segment colors on the active scale |
 
-For backwards compatibility with the original Sensor Bar Card, `bands` remains the implicit default fill style when no explicit style is configured. It is what it is.
+`bands` remains the implicit default when no fill style is configured. This preserves backwards compatibility with the original Sensor Bar Card and ensures older dashboards continue to render identically. New dashboards may specify `bar.fill_style` explicitly, but this is not required.
 
 ## Needle
 
