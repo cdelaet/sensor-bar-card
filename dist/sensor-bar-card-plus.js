@@ -1542,25 +1542,6 @@
             { p: 100, r: 244, g: 67, b: 54 }
           ];
         }
-        _interpolateStopColor(stops, pct) {
-          if (!Array.isArray(stops) || !stops.length) return null;
-          const clampedPct = Math.min(100, Math.max(0, pct));
-          let lo = stops[0];
-          let hi = stops[stops.length - 1];
-          for (let i = 0; i < stops.length - 1; i++) {
-            if (clampedPct >= stops[i].p && clampedPct <= stops[i + 1].p) {
-              lo = stops[i];
-              hi = stops[i + 1];
-              break;
-            }
-          }
-          const t = lo.p === hi.p ? 0 : (clampedPct - lo.p) / (hi.p - lo.p);
-          return {
-            r: Math.round(lo.r + t * (hi.r - lo.r)),
-            g: Math.round(lo.g + t * (hi.g - lo.g)),
-            b: Math.round(lo.b + t * (hi.b - lo.b))
-          };
-        }
         _rgbToCss(rgb) {
           if (!rgb) return null;
           return `rgb(${rgb.r},${rgb.g},${rgb.b})`;
@@ -2701,7 +2682,7 @@
         _applyInsideLabelDensity() {
           if (!this.shadowRoot) return;
           this.shadowRoot.querySelectorAll(".bar-inner-label").forEach((innerLabel) => {
-            var _a, _b, _c, _d, _e;
+            var _a, _b, _c, _d, _e, _f;
             const track = innerLabel.closest(".bar-track");
             const mainLine = innerLabel.closest(".main-line");
             const nameEl = innerLabel.querySelector(".inside-name");
@@ -2717,29 +2698,45 @@
             const rowDensity = this._isReliableWidth(rowWidth) ? this._classifyRowDensity(rowWidth, ((_b = mainLine == null ? void 0 : mainLine.dataset) == null ? void 0 : _b.rowDensity) || "normal") : ((_c = mainLine == null ? void 0 : mainLine.dataset) == null ? void 0 : _c.rowDensity) || "normal";
             const iconWrap = (_e = (_d = mainLine == null ? void 0 : mainLine.querySelector) == null ? void 0 : _d.call(mainLine, ".icon-wrap")) != null ? _e : null;
             let hideIcon = rowDensity === "dense" || rowDensity === "compressed";
-            let hideName = density === "dense" || density === "compressed";
             const reclaimedWidth = iconWrap ? this._getLeftModeIconWidth(iconWrap, mainLine) + this._getLeftModeGap(mainLine) : 0;
             if (!hideIcon && valueWidth > this._getInsideValueVisibleCap(trackWidth, density)) {
               hideIcon = true;
             }
             if (iconWrap && hideIcon) {
               density = this._classifyInsideDensity(trackWidth + reclaimedWidth, valueWidth);
-              hideName = density === "dense" || density === "compressed";
             }
             const effectiveTrackWidth = trackWidth + (hideIcon ? reclaimedWidth : 0);
-            if (!hideName && valueWidth > this._getInsideValueVisibleCap(effectiveTrackWidth, density)) {
-              hideName = true;
-            }
+            let hideName = false;
             if (rowDensity === "compressed") {
               density = "compressed";
               hideIcon = true;
-              hideName = true;
-            } else if (hideName && density === "normal") {
-              density = "dense";
             }
-            const valueCap = this._getInsideValueVisibleCap(effectiveTrackWidth, density);
+            const rawValueCap = this._getInsideValueVisibleCap(trackWidth, density);
+            const innerPadding = this._getNumericStyleValue(innerLabel, "padding-left", 0) + this._getNumericStyleValue(innerLabel, "padding-right", 0);
+            const valueCap = Math.max(0, rawValueCap - innerPadding);
             const hideUnit = !!valueUnit && valueWidth > valueCap;
             const hideValue = valueOnlyWidth > valueCap;
+            const reservedValueWidth = hideValue ? 0 : Math.ceil(hideUnit ? valueOnlyWidth : valueWidth);
+            const labelGap = !hideValue ? this._getNumericStyleValue(innerLabel, "gap", 0) : 0;
+            if (!hideValue) {
+              const nameText = (nameEl.textContent || "").trim();
+              const nameFullWidth = nameEl.scrollWidth || ((_f = nameEl.getBoundingClientRect) == null ? void 0 : _f.call(nameEl).width) || this._measureTextWidthWithStyles(nameEl, nameText);
+              if (!nameText || !Number.isFinite(nameFullWidth) || nameFullWidth <= 0) {
+                hideName = density === "dense" || density === "compressed";
+              } else {
+                const usefulNameWidth = this._getInsideUsefulNameWidth(nameEl, nameText, nameFullWidth);
+                const availableNameWidth = Math.max(
+                  0,
+                  trackWidth - innerPadding - reservedValueWidth - labelGap
+                );
+                const visibleChars = this._measureVisibleLabelCharacters(nameEl, nameText, availableNameWidth);
+                const minUsefulChars = Math.min(4, nameText.length);
+                const nameNeedsTruncation = nameFullWidth > availableNameWidth + 1;
+                const hasUsefulRoom = availableNameWidth >= usefulNameWidth && (!nameNeedsTruncation || visibleChars >= minUsefulChars);
+                hideName = !hasUsefulRoom;
+              }
+            }
+            if (hideName && density === "normal") density = "dense";
             innerLabel.dataset.insideDensity = density;
             innerLabel.dataset.hideName = hideName ? "true" : "false";
             valueEl.dataset.hideUnit = hideUnit ? "true" : "false";
@@ -2997,7 +2994,16 @@
           clone.style.whiteSpace = "nowrap";
           clone.innerHTML = this._formatInsideValueMarkup(display, unit, hideUnit);
           layer.replaceChildren(clone);
-          return clone.scrollWidth;
+          let extraWidth = 0;
+          try {
+            const style = getComputedStyle(valueEl);
+            extraWidth += parseFloat(style.paddingLeft || "0") || 0;
+            extraWidth += parseFloat(style.paddingRight || "0") || 0;
+            extraWidth += parseFloat(style.borderLeftWidth || "0") || 0;
+            extraWidth += parseFloat(style.borderRightWidth || "0") || 0;
+          } catch (_err) {
+          }
+          return clone.getBoundingClientRect().width + extraWidth;
         }
         _measureTextWidthWithStyles(sourceEl, text) {
           var _a;
@@ -3038,6 +3044,14 @@
           if (!Number.isFinite(fullWidth) || !Number.isFinite(visibleWidth)) return false;
           const truncated = fullWidth > visibleWidth + 1;
           return truncated && visibleChars < 5;
+        }
+        _getInsideUsefulNameWidth(labelTextEl, text, fullWidth = NaN) {
+          if (!text) return 0;
+          const naturalWidth = Number.isFinite(fullWidth) && fullWidth > 0 ? fullWidth : this._measureTextWidthWithStyles(labelTextEl, text);
+          const usefulChars = text.slice(0, Math.min(5, text.length));
+          const usefulWidth = this._measureTextWidthWithStyles(labelTextEl, usefulChars) + this._measureTextWidthWithStyles(labelTextEl, "...");
+          const minUsefulWidth = Math.max(36, Math.min(44, usefulWidth || 0));
+          return Math.min(naturalWidth || minUsefulWidth, minUsefulWidth);
         }
         _applyValueWidthReservation() {
           if (!this.shadowRoot) return;
@@ -3528,7 +3542,12 @@
           return encodeURIComponent(String(value != null ? value : ""));
         }
         _decodeDataAttr(value) {
-          return decodeURIComponent(String(value != null ? value : ""));
+          const raw = String(value != null ? value : "");
+          try {
+            return decodeURIComponent(raw);
+          } catch (_err) {
+            return raw;
+          }
         }
         _parseColorToRgb(color) {
           const value = String(color || "").trim();
@@ -3702,7 +3721,8 @@
           const leftLabel = lp === "left" ? `<div class="label-left" style="flex:0 1 min(${layout.label.width}px, var(--sbcp-left-label-share));max-width:min(${layout.label.width}px, var(--sbcp-left-label-share));"><span class="label-left-text">${escapedName}</span></div>` : "";
           const rightValue = lp !== "inside" && lp !== "above" && lp !== "hero" ? `<div class="value-right" data-display="${this._encodeDataAttr(stateDisplay)}" data-unit="${this._encodeDataAttr(unit)}" data-hide-unit="false">${this._formatRightValueMarkup(stateDisplay, unit, false)}</div>` : "";
           const topRightValue = lp === "left" ? `<div class="top-right-value" data-display="${this._encodeDataAttr(stateDisplay)}" data-unit="${this._encodeDataAttr(unit)}" data-hide-unit="false" data-active="false">${this._formatRightValueMarkup(stateDisplay, unit, false)}</div>` : "";
-          const mainIcon = ecfg.icon && ecfg.icon !== false && lp !== "hero" ? `<div class="icon-wrap"><ha-icon icon="${ecfg.icon}"></ha-icon></div>` : "";
+          const escapedIcon = ecfg.icon && ecfg.icon !== false ? escapeHtml(ecfg.icon) : "";
+          const mainIcon = escapedIcon && lp !== "hero" ? `<div class="icon-wrap"><ha-icon icon="${escapedIcon}"></ha-icon></div>` : "";
           return `
       <div class="row" data-entity="${escapedEntityId}" data-base-height="${h}" data-height-explicit="${((_s = (_r = rowViewModel == null ? void 0 : rowViewModel.attributes) == null ? void 0 : _r.heightExplicit) != null ? _s : layout.height_explicit) ? "true" : "false"}" data-bar-animated="${((_u = (_t = rowViewModel == null ? void 0 : rowViewModel.attributes) == null ? void 0 : _t.barAnimated) != null ? _u : bar.animated) ? "true" : "false"}">
         <div class="row-stack" style="--sbcp-row-height:${h}px;">

@@ -3073,8 +3073,9 @@ describe('Sensor Bar Card Plus logic', () => {
 
   it('inside mode hides the name only when icon sacrifice still leaves no room', () => {
     const card = createCard();
-    card._measureInsideValueMarkupWidth = () => 52;
-    const iconWrap = { getBoundingClientRect: () => ({ width: 28 }) };
+    // Full value+unit does not fit, but numeric value alone still fits.
+    // This keeps the test focused on name hiding, not value-pill hiding.
+    card._measureInsideValueMarkupWidth = (_valueEl, _display, _unit, hideUnit) => hideUnit ? 20 : 52;    const iconWrap = { getBoundingClientRect: () => ({ width: 28 }) };
     const mainLine = {
       dataset: { rowDensity: 'tight' },
       querySelector: (selector) => selector === '.icon-wrap' ? iconWrap : null,
@@ -3103,6 +3104,7 @@ describe('Sensor Bar Card Plus logic', () => {
 
     expect(innerLabel.dataset.insideDensity).toBe('compressed');
     expect(innerLabel.dataset.hideName).toBe('true');
+    expect(valueEl.dataset.hideUnit).toBe('true');
     expect(mainLine.dataset.hideInsideIcon).toBe('true');
   });
 

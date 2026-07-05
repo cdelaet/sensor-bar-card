@@ -829,28 +829,6 @@ export class SensorBarCard extends HTMLElement {
     ];
   }
 
-  _interpolateStopColor(stops, pct) {
-    if (!Array.isArray(stops) || !stops.length) return null;
-    const clampedPct = Math.min(100, Math.max(0, pct));
-    let lo = stops[0];
-    let hi = stops[stops.length - 1];
-
-    for (let i = 0; i < stops.length - 1; i++) {
-      if (clampedPct >= stops[i].p && clampedPct <= stops[i + 1].p) {
-        lo = stops[i];
-        hi = stops[i + 1];
-        break;
-      }
-    }
-
-    const t = lo.p === hi.p ? 0 : (clampedPct - lo.p) / (hi.p - lo.p);
-    return {
-      r: Math.round(lo.r + t * (hi.r - lo.r)),
-      g: Math.round(lo.g + t * (hi.g - lo.g)),
-      b: Math.round(lo.b + t * (hi.b - lo.b)),
-    };
-  }
-
   _rgbToCss(rgb) {
     if (!rgb) return null;
     return `rgb(${rgb.r},${rgb.g},${rgb.b})`;
@@ -2062,6 +2040,7 @@ _getAboveTargetLayerGeometry(targetPct = null) {
       const valueUnit = this._decodeDataAttr(valueEl.dataset.unit || valueEl.querySelector('.inside-unit')?.textContent || '');
       const valueWidth = this._measureInsideValueMarkupWidth(valueEl, valueDisplay, valueUnit, false);
       const valueOnlyWidth = this._measureInsideValueMarkupWidth(valueEl, valueDisplay, valueUnit, true);
+
       let density = this._classifyInsideDensity(trackWidth, valueWidth);
       const rowWidth = typeof mainLine?.getBoundingClientRect === 'function'
         ? mainLine.getBoundingClientRect().width
@@ -2071,7 +2050,6 @@ _getAboveTargetLayerGeometry(targetPct = null) {
         : (mainLine?.dataset?.rowDensity || 'normal');
       const iconWrap = mainLine?.querySelector?.('.icon-wrap') ?? null;
       let hideIcon = rowDensity === 'dense' || rowDensity === 'compressed';
-      let hideName = density === 'dense' || density === 'compressed';
       const reclaimedWidth = iconWrap
         ? this._getLeftModeIconWidth(iconWrap, mainLine) + this._getLeftModeGap(mainLine)
         : 0;
@@ -2082,25 +2060,51 @@ _getAboveTargetLayerGeometry(targetPct = null) {
 
       if (iconWrap && hideIcon) {
         density = this._classifyInsideDensity(trackWidth + reclaimedWidth, valueWidth);
-        hideName = density === 'dense' || density === 'compressed';
       }
 
       const effectiveTrackWidth = trackWidth + (hideIcon ? reclaimedWidth : 0);
-      if (!hideName && valueWidth > this._getInsideValueVisibleCap(effectiveTrackWidth, density)) {
-        hideName = true;
-      }
+      let hideName = false;
 
       if (rowDensity === 'compressed') {
         density = 'compressed';
         hideIcon = true;
-        hideName = true;
-      } else if (hideName && density === 'normal') {
-        density = 'dense';
       }
 
-      const valueCap = this._getInsideValueVisibleCap(effectiveTrackWidth, density);
+      const rawValueCap = this._getInsideValueVisibleCap(trackWidth, density);
+      const innerPadding =
+        this._getNumericStyleValue(innerLabel, 'padding-left', 0)
+        + this._getNumericStyleValue(innerLabel, 'padding-right', 0);
+
+      const valueCap = Math.max(0, rawValueCap - innerPadding);
       const hideUnit = !!valueUnit && valueWidth > valueCap;
       const hideValue = valueOnlyWidth > valueCap;
+      const reservedValueWidth = hideValue ? 0 : Math.ceil(hideUnit ? valueOnlyWidth : valueWidth);
+      const labelGap = !hideValue ? this._getNumericStyleValue(innerLabel, 'gap', 0) : 0;
+
+      if (!hideValue) {
+        const nameText = (nameEl.textContent || '').trim();
+        const nameFullWidth = nameEl.scrollWidth
+          || nameEl.getBoundingClientRect?.().width
+          || this._measureTextWidthWithStyles(nameEl, nameText);
+        if (!nameText || !Number.isFinite(nameFullWidth) || nameFullWidth <= 0) {
+          hideName = density === 'dense' || density === 'compressed';
+        } else {
+          const usefulNameWidth = this._getInsideUsefulNameWidth(nameEl, nameText, nameFullWidth);
+          const availableNameWidth = Math.max(
+            0,
+            trackWidth - innerPadding - reservedValueWidth - labelGap,
+          );
+          const visibleChars = this._measureVisibleLabelCharacters(nameEl, nameText, availableNameWidth);
+          const minUsefulChars = Math.min(4, nameText.length);
+          const nameNeedsTruncation = nameFullWidth > availableNameWidth + 1;
+          const hasUsefulRoom = availableNameWidth >= usefulNameWidth
+            && (!nameNeedsTruncation || visibleChars >= minUsefulChars);
+          hideName = !hasUsefulRoom;
+        }
+      }
+
+      if (hideName && density === 'normal') density = 'dense';
+
       innerLabel.dataset.insideDensity = density;
       innerLabel.dataset.hideName = hideName ? 'true' : 'false';
       valueEl.dataset.hideUnit = hideUnit ? 'true' : 'false';
@@ -2400,7 +2404,18 @@ _getAboveTargetLayerGeometry(targetPct = null) {
     clone.style.whiteSpace = 'nowrap';
     clone.innerHTML = this._formatInsideValueMarkup(display, unit, hideUnit);
     layer.replaceChildren(clone);
-    return clone.scrollWidth;
+    let extraWidth = 0;
+
+    try {
+      const style = getComputedStyle(valueEl);
+      extraWidth += parseFloat(style.paddingLeft || '0') || 0;
+      extraWidth += parseFloat(style.paddingRight || '0') || 0;
+      extraWidth += parseFloat(style.borderLeftWidth || '0') || 0;
+      extraWidth += parseFloat(style.borderRightWidth || '0') || 0;
+    } catch (_err) {
+      // Ignore computed-style lookup failures in non-browser test shims.
+    }
+    return clone.getBoundingClientRect().width + extraWidth;
   }
 
   _measureTextWidthWithStyles(sourceEl, text) {
@@ -2444,6 +2459,18 @@ _getAboveTargetLayerGeometry(targetPct = null) {
     if (!Number.isFinite(fullWidth) || !Number.isFinite(visibleWidth)) return false;
     const truncated = fullWidth > visibleWidth + 1;
     return truncated && visibleChars < 5;
+  }
+
+  _getInsideUsefulNameWidth(labelTextEl, text, fullWidth = NaN) {
+    if (!text) return 0;
+    const naturalWidth = Number.isFinite(fullWidth) && fullWidth > 0
+      ? fullWidth
+      : this._measureTextWidthWithStyles(labelTextEl, text);
+    const usefulChars = text.slice(0, Math.min(5, text.length));
+    const usefulWidth = this._measureTextWidthWithStyles(labelTextEl, usefulChars)
+      + this._measureTextWidthWithStyles(labelTextEl, '...');
+    const minUsefulWidth = Math.max(36, Math.min(44, usefulWidth || 0));
+    return Math.min(naturalWidth || minUsefulWidth, minUsefulWidth);
   }
 
   _applyValueWidthReservation() {
@@ -3016,7 +3043,12 @@ _getAboveTargetLayerGeometry(targetPct = null) {
   }
 
   _decodeDataAttr(value) {
-    return decodeURIComponent(String(value ?? ''));
+    const raw = String(value ?? '');
+    try {
+      return decodeURIComponent(raw);
+    } catch (_err) {
+      return raw;
+    }
   }
 
   _parseColorToRgb(color) {
@@ -3229,8 +3261,9 @@ _getAboveTargetLayerGeometry(targetPct = null) {
     const topRightValue = lp === 'left'
       ? `<div class="top-right-value" data-display="${this._encodeDataAttr(stateDisplay)}" data-unit="${this._encodeDataAttr(unit)}" data-hide-unit="false" data-active="false">${this._formatRightValueMarkup(stateDisplay, unit, false)}</div>`
       : '';
-    const mainIcon = ecfg.icon && ecfg.icon !== false && lp !== 'hero'
-      ? `<div class="icon-wrap"><ha-icon icon="${ecfg.icon}"></ha-icon></div>`
+    const escapedIcon = ecfg.icon && ecfg.icon !== false ? escapeHtml(ecfg.icon) : '';
+    const mainIcon = escapedIcon && lp !== 'hero'
+      ? `<div class="icon-wrap"><ha-icon icon="${escapedIcon}"></ha-icon></div>`
       : '';
     return `
       <div class="row" data-entity="${escapedEntityId}" data-base-height="${h}" data-height-explicit="${(rowViewModel?.attributes?.heightExplicit ?? layout.height_explicit) ? 'true' : 'false'}" data-bar-animated="${(rowViewModel?.attributes?.barAnimated ?? bar.animated) ? 'true' : 'false'}">
