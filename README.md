@@ -1507,6 +1507,7 @@ scale
 
 bar
 ├── fill_style
+├── segment_space
 ├── color
 ├── solid_fill
 ├── needle
@@ -1556,6 +1557,7 @@ formatting
 | `scale.max.fixed` | `100` | number | Fixed upper bound of the active scale. |
 | `scale.max.entity` | `null` | entity id | Dynamic upper bound entity. |
 | `bar.fill_style` | `bands` | `solid`, `gradient`, `bands`, `soft_bands`, `band_gradient` | Fill rendering style. |
+| `bar.segment_space` | `percent` | `percent`, `scale` | Determines whether `bar.segments` are interpreted as percentages of the bar or as actual values on the configured scale. |
 | `bar.color` | `#4a9eff` | CSS color | Solid or fallback fill color. |
 | `bar.solid_fill` | `false` | boolean | Samples the active color and renders the revealed fill as one solid color. |
 | `bar.needle` | `false` | boolean or object | Enables needle mode using `true` or `{ show, color }`. |
@@ -1604,7 +1606,7 @@ Legacy flat options are listed separately in the Legacy Compatibility / Migratio
 | `color_mode` | string | `severity` | Legacy compatibility alias for `bar.color_mode` |
 | `color` | string | `#4a9eff` | Legacy flat alias for `bar.color` |
 | `gradient_stops` | list | `null` | Legacy flat alias for `bar.gradient_stops` |
-| `segments` | list | `null` | Top-level structured alias for `bar.segments` |
+| `segments` | list | `null` | Legacy flat alias for `bar.segments` |
 | `severity` | list | default 3-band scale | Legacy severity array, normalized into `bar.segments` |
 | `animated` | boolean | `true` | Legacy flat alias for `bar.animated` |
 | `target_entity` | string | `null` | Legacy alias for `target.at.entity` |
