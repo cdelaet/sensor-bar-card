@@ -201,17 +201,40 @@ export function normalizeScaleBound(entityConfig, cardConfig, key, defaultValue)
   const cardScale = cardConfig?.scale;
   const entityScale = entityConfig?.scale;
   const entityKey = `${key}_entity`;
-  const inherited = normalizeResolvableValue(
-    cardScale?.[key]?.fixed ?? cardScale?.[key]?.value ?? cardConfig?.[key] ?? defaultValue,
-    cardScale?.[key]?.entity ?? cardConfig?.[entityKey] ?? null
-  );
+  const cardBound = cardScale?.[key];
+
+  const inherited = cardBound
+    ? normalizeResolvableValue(
+      cardBound.fixed ?? cardBound.value ?? null,
+      cardBound.entity ?? null
+    )
+    : normalizeResolvableValue(
+      cardConfig?.[key] ?? defaultValue,
+      cardConfig?.[entityKey] ?? null
+    );
 
   if (entityScale?.[key] !== undefined) {
-    return normalizeStructuredResolvableValue(entityScale[key], inherited, defaultValue);
+    return normalizeStructuredResolvableValue(
+      entityScale[key],
+      inherited,
+      defaultValue
+    );
   }
 
-  const value = entityConfig[key] ?? inherited.fixed ?? defaultValue;
-  const entity = entityConfig[entityKey] ?? inherited.entity ?? null;
+  const entityOverride = entityConfig[entityKey];
+  const hasEntityOverride =
+    entityOverride !== undefined && entityOverride !== null;
+
+  const value =
+    entityConfig[key]
+    ?? (hasEntityOverride ? null : inherited.fixed)
+    ?? (inherited.entity ? null : defaultValue);
+
+  const entity =
+    entityOverride
+    ?? inherited.entity
+    ?? null;
+
   return normalizeResolvableValue(value, entity);
 }
 

@@ -199,19 +199,29 @@
     });
   }
   function normalizeScaleBound(entityConfig, cardConfig, key, defaultValue) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
     const cardScale = cardConfig == null ? void 0 : cardConfig.scale;
     const entityScale = entityConfig == null ? void 0 : entityConfig.scale;
     const entityKey = `${key}_entity`;
-    const inherited = normalizeResolvableValue(
-      (_e = (_d = (_c = (_a = cardScale == null ? void 0 : cardScale[key]) == null ? void 0 : _a.fixed) != null ? _c : (_b = cardScale == null ? void 0 : cardScale[key]) == null ? void 0 : _b.value) != null ? _d : cardConfig == null ? void 0 : cardConfig[key]) != null ? _e : defaultValue,
-      (_h = (_g = (_f = cardScale == null ? void 0 : cardScale[key]) == null ? void 0 : _f.entity) != null ? _g : cardConfig == null ? void 0 : cardConfig[entityKey]) != null ? _h : null
+    const cardBound = cardScale == null ? void 0 : cardScale[key];
+    const inherited = cardBound ? normalizeResolvableValue(
+      (_b = (_a = cardBound.fixed) != null ? _a : cardBound.value) != null ? _b : null,
+      (_c = cardBound.entity) != null ? _c : null
+    ) : normalizeResolvableValue(
+      (_d = cardConfig == null ? void 0 : cardConfig[key]) != null ? _d : defaultValue,
+      (_e = cardConfig == null ? void 0 : cardConfig[entityKey]) != null ? _e : null
     );
     if ((entityScale == null ? void 0 : entityScale[key]) !== void 0) {
-      return normalizeStructuredResolvableValue(entityScale[key], inherited, defaultValue);
+      return normalizeStructuredResolvableValue(
+        entityScale[key],
+        inherited,
+        defaultValue
+      );
     }
-    const value = (_j = (_i = entityConfig[key]) != null ? _i : inherited.fixed) != null ? _j : defaultValue;
-    const entity = (_l = (_k = entityConfig[entityKey]) != null ? _k : inherited.entity) != null ? _l : null;
+    const entityOverride = entityConfig[entityKey];
+    const hasEntityOverride = entityOverride !== void 0 && entityOverride !== null;
+    const value = (_g = (_f = entityConfig[key]) != null ? _f : hasEntityOverride ? null : inherited.fixed) != null ? _g : inherited.entity ? null : defaultValue;
+    const entity = (_h = entityOverride != null ? entityOverride : inherited.entity) != null ? _h : null;
     return normalizeResolvableValue(value, entity);
   }
   function normalizeScaleConfig(entityConfig, cardConfig) {
