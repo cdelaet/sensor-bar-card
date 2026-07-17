@@ -402,6 +402,11 @@ export function normalizeHeroSize(size, fallback = 'medium') {
     : fallback;
 }
 
+export function normalizeHeroFontSize(value) {
+  if (!Number.isFinite(value)) return null;
+  return Math.min(112, Math.max(12, value));
+}
+
 export function normalizeLayoutConfig(entityConfig, cardConfig) {
   const cardLayout = cardConfig?.layout;
   const entityLayout = entityConfig?.layout;
@@ -415,17 +420,22 @@ export function normalizeLayoutConfig(entityConfig, cardConfig) {
     || (!isCardLevelNormalization && entityConfig.height !== undefined)
     || cardLayout?.height_explicit === true
     || cardConfig?._height_explicit === true;
+  const labelPosition = normalizeLabelPosition(
+    entityLabel?.position ?? entityConfig.label_position ?? cardLabel?.position ?? cardLayout?.label_position ?? cardConfig?.label_position,
+    'left'
+  );
+  const heroFontSize = labelPosition === 'hero'
+    ? normalizeHeroFontSize(entityLabel?.font_size ?? cardLabel?.font_size)
+    : null;
   return {
     label: {
-      position: normalizeLabelPosition(
-        entityLabel?.position ?? entityConfig.label_position ?? cardLabel?.position ?? cardLayout?.label_position ?? cardConfig?.label_position,
-        'left'
-      ),
+      position: labelPosition,
       width: entityLabel?.width ?? entityConfig.label_width ?? cardLabel?.width ?? cardLayout?.label_width ?? cardConfig?.label_width ?? 100,
       hero_size: normalizeHeroSize(
         entityLabel?.hero_size ?? entityLabel?.heroSize ?? entityConfig.hero_size ?? entityConfig.heroSize ?? cardLabel?.hero_size ?? cardLabel?.heroSize ?? cardLayout?.hero_size ?? cardLayout?.heroSize ?? cardConfig?.hero_size ?? cardConfig?.heroSize,
         'medium'
       ),
+      font_size: heroFontSize,
     },
     height: clampSupportedRowHeight(rawHeight),
     height_explicit: heightExplicit,

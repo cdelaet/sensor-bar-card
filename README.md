@@ -116,7 +116,7 @@ What the Visual Editor supports:
 - structured YAML output for edited fields
 - card-level defaults with per-entity overrides
 - dynamic `scale`, `target`, and `baseline` values driven by Home Assistant entities
-- Hero label layout and Hero size selection directly from the editor
+- Hero label layout, Hero size presets, and optional custom maximum Hero font size directly from the editor
 - controls for target, baseline, peak, and needle behavior
 - segment and gradient stop editing with live previews
 - entity management actions for move, duplicate, and remove
@@ -715,6 +715,27 @@ layout:
 ```
 
 If omitted, `hero_size` defaults to `medium`.
+
+### Custom Hero Font Size
+
+For finer control, Hero mode also supports an optional custom maximum font size.
+
+```yaml
+layout:
+  label:
+    position: hero
+    hero_size: medium
+    font_size: 72
+```
+
+`font_size` specifies the preferred maximum Hero value size in pixels. The responsive layout engine still automatically reduces the rendered size whenever necessary to fit the available space.
+
+When both `hero_size` and `font_size` are specified, `font_size` takes precedence. The `hero_size` preset remains available as the fallback if `font_size` is later removed.
+
+Supported values are **12** through **112** pixels. Values outside this range are automatically clamped.
+
+`font_size` only applies when `layout.label.position: hero`. It is ignored for all other label positions.
+
 
 ![Hero size comparison](images/hero-label-sizes.png)
 
@@ -1495,6 +1516,7 @@ layout
 └── label
     ├── position
     ├── hero_size
+    ├── font_size
     └── width
 
 scale

@@ -210,6 +210,7 @@ describe('Sensor Bar Card Plus logic', () => {
 
     expect(cfg.layout).toEqual({
       label: {
+        font_size: null,
         hero_size: 'medium',
         position: 'left',
         width: 160,
@@ -246,6 +247,31 @@ describe('Sensor Bar Card Plus logic', () => {
     expect(heroCfg.entities[0].layout.label.hero_size).toBe('large');
     expect(invalidCfg.layout.label.position).toBe('left');
     expect(invalidCfg.layout.label.hero_size).toBe('medium');
+  });
+
+  it('normalizes hero font sizes and ignores them outside hero mode', () => {
+    const card = createCard();
+    const normalizeFontSize = (fontSize, position = 'hero') => card.normalizeCardConfig({
+      layout: { label: { position, hero_size: 'small', font_size: fontSize } },
+      entities: [{ entity: 'sensor.row' }],
+    }).layout.label.font_size;
+
+    expect(normalizeFontSize(72)).toBe(72);
+    expect(normalizeFontSize(1)).toBe(12);
+    expect(normalizeFontSize(200)).toBe(112);
+    expect(normalizeFontSize('72px')).toBeNull();
+    expect(normalizeFontSize('72')).toBeNull();
+    expect(normalizeFontSize(72, 'above')).toBeNull();
+
+    const inheritedCfg = card.normalizeCardConfig({
+      layout: { label: { position: 'hero', hero_size: 'small', font_size: 72 } },
+      entities: [{ entity: 'sensor.inherited' }, {
+        entity: 'sensor.override',
+        layout: { label: { font_size: 80 } },
+      }],
+    });
+    expect(inheritedCfg.entities[0].layout.label.font_size).toBe(72);
+    expect(inheritedCfg.entities[1].layout.label.font_size).toBe(80);
   });
 
   it('rendering reads the nested layout shape', () => {
@@ -351,6 +377,7 @@ describe('Sensor Bar Card Plus logic', () => {
 
     expect(cfg.layout).toEqual({
       label: {
+        font_size: null,
         hero_size: 'medium',
         position: 'above',
         width: 180,
@@ -2271,6 +2298,7 @@ describe('Sensor Bar Card Plus logic', () => {
     const row = cfg.entities[0];
     expect(row.layout).toEqual({
       label: {
+        font_size: null,
         hero_size: 'medium',
         position: 'above',
         width: 180,
@@ -2350,6 +2378,7 @@ describe('Sensor Bar Card Plus logic', () => {
     const row = cfg.entities[0];
     expect(row.layout).toEqual({
       label: {
+        font_size: null,
         hero_size: 'medium',
         position: 'left',
         width: 140,
@@ -2429,6 +2458,7 @@ describe('Sensor Bar Card Plus logic', () => {
     const row = cfg.entities[0];
     expect(row.layout).toEqual({
       label: {
+        font_size: null,
         hero_size: 'medium',
         position: 'inside',
         width: 200,
@@ -3757,6 +3787,43 @@ describe('Sensor Bar Card Plus logic', () => {
     );
 
     expect(html).toContain('data-hero-size="medium"');
+  });
+
+  it('uses a custom hero font size ahead of presets and clears it when absent', () => {
+    const card = createCard();
+    card._hass.states = {
+      'sensor.hero': {
+        state: '7.2',
+        attributes: { friendly_name: 'Solar Production', unit_of_measurement: 'kW' },
+      },
+    };
+    const buildHero = (label) => {
+      const cfg = card.normalizeCardConfig({
+        layout: { label },
+        entities: [{ entity: 'sensor.hero' }],
+      });
+      return card._buildRow(cfg.entities[0], '7.2', 'kW', 72, '#4a9eff', null, null, null, null, '#888', '#888', 0, 10);
+    };
+
+    expect(buildHero({ position: 'hero', hero_size: 'small', font_size: 72 }))
+      .toContain('data-hero-size="small" style="--sbcp-hero-base-size:72px"');
+    expect(buildHero({ position: 'hero', hero_size: 'small' }))
+      .toContain('data-hero-size="small"');
+    expect(buildHero({ position: 'hero', hero_size: 'medium' }))
+      .toContain('data-hero-size="medium"');
+    expect(buildHero({ position: 'hero', hero_size: 'large' }))
+      .toContain('data-hero-size="large"');
+    expect(buildHero({ position: 'hero', hero_size: 'small' }))
+      .not.toContain('--sbcp-hero-base-size:');
+    expect(buildHero({ position: 'above', font_size: 72 }))
+      .not.toContain('--sbcp-hero-base-size:');
+  });
+
+  it('copies a custom hero base size to the measurement clone', () => {
+    const source = readFileSync(new URL('../../src/card/SensorBarCard.js', import.meta.url), 'utf8');
+
+    expect(source).toContain("heroLine.style?.getPropertyValue?.('--sbcp-hero-base-size') || null");
+    expect(source).toContain("wrapper,\n      '--sbcp-hero-base-size'");
   });
 
   it('patches hero rows without rebuilding above-mode markup', () => {

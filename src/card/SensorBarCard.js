@@ -2268,6 +2268,11 @@ _getAboveTargetLayerGeometry(targetPct = null) {
     wrapper.dataset.heroValueFit = valueFit;
     wrapper.dataset.hideHeroUnit = hideUnit ? 'true' : 'false';
     wrapper.style.display = 'inline-block';
+    this._setStyleIfChanged(
+      wrapper,
+      '--sbcp-hero-base-size',
+      heroLine.style?.getPropertyValue?.('--sbcp-hero-base-size') || null
+    );
 
     const measureValue = document.createElement('span');
     measureValue.className = 'hero-value';
@@ -3238,8 +3243,9 @@ _getAboveTargetLayerGeometry(targetPct = null) {
         </div>
       </div>` : '';
     const heroSize = layout.label.hero_size ?? 'small';
+    const heroFontSize = layout.label.font_size;
     const heroHeader = lp === 'hero' ? `
-      <div class="hero-line" data-hero-size="${heroSize}">
+      <div class="hero-line" data-hero-size="${heroSize}"${Number.isFinite(heroFontSize) ? ` style="--sbcp-hero-base-size:${heroFontSize}px"` : ''}>
         <div class="hero-header">
           <span class="hero-label label-left-text">${escapedName}</span>
           <span class="hero-value" data-display="${this._encodeDataAttr(stateDisplay)}" data-unit="${this._encodeDataAttr(unit)}">${this._formatRightValueMarkup(stateDisplay, unit, false)}</span>
@@ -3375,6 +3381,12 @@ ${paintLayers}
     }
     const heroHeader = row.querySelector('.hero-header');
     if (heroHeader) {
+      const heroLine = row.querySelector('.hero-line');
+      this._setStyleIfChanged(
+        heroLine,
+        '--sbcp-hero-base-size',
+        Number.isFinite(ecfg.layout.label.font_size) ? `${ecfg.layout.label.font_size}px` : null
+      );
       heroHeader.innerHTML = `<span class="hero-label label-left-text">${escapeHtml(rowViewModel.name)}</span><span class="hero-value" data-display="${this._encodeDataAttr(display)}" data-unit="${this._encodeDataAttr(displayUnit)}">${this._formatRightValueMarkup(display, displayUnit, false)}</span>`;
     }
     const aboveLabel = heroHeader ? null : row.querySelector('.above-bar-label');
