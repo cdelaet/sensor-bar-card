@@ -379,11 +379,13 @@
     return Math.min(112, Math.max(12, value));
   }
   function normalizeLayoutConfig(entityConfig, cardConfig) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y;
     const cardLayout = cardConfig == null ? void 0 : cardConfig.layout;
     const entityLayout = entityConfig == null ? void 0 : entityConfig.layout;
     const entityLabel = entityLayout == null ? void 0 : entityLayout.label;
+    const entityHero = entityLayout == null ? void 0 : entityLayout.hero;
     const cardLabel = cardLayout == null ? void 0 : cardLayout.label;
+    const cardHero = cardLayout == null ? void 0 : cardLayout.hero;
     const isCardLevelNormalization = !cardConfig;
     const rawHeight = (_d = (_c = (_b = (_a = entityLayout == null ? void 0 : entityLayout.height) != null ? _a : entityConfig.height) != null ? _b : cardLayout == null ? void 0 : cardLayout.height) != null ? _c : cardConfig == null ? void 0 : cardConfig.height) != null ? _d : 38;
     const heightExplicit = (entityLayout == null ? void 0 : entityLayout.height) !== void 0 || entityConfig._height_explicit === true || !isCardLevelNormalization && entityConfig.height !== void 0 || (cardLayout == null ? void 0 : cardLayout.height_explicit) === true || (cardConfig == null ? void 0 : cardConfig._height_explicit) === true;
@@ -391,16 +393,18 @@
       (_h = (_g = (_f = (_e = entityLabel == null ? void 0 : entityLabel.position) != null ? _e : entityConfig.label_position) != null ? _f : cardLabel == null ? void 0 : cardLabel.position) != null ? _g : cardLayout == null ? void 0 : cardLayout.label_position) != null ? _h : cardConfig == null ? void 0 : cardConfig.label_position,
       "left"
     );
-    const heroFontSize = labelPosition === "hero" ? normalizeHeroFontSize((_i = entityLabel == null ? void 0 : entityLabel.font_size) != null ? _i : cardLabel == null ? void 0 : cardLabel.font_size) : null;
+    const heroFontSize = labelPosition === "hero" ? normalizeHeroFontSize((_i = entityHero == null ? void 0 : entityHero.value_size) != null ? _i : cardHero == null ? void 0 : cardHero.value_size) : null;
     return {
       label: {
         position: labelPosition,
-        width: (_n = (_m = (_l = (_k = (_j = entityLabel == null ? void 0 : entityLabel.width) != null ? _j : entityConfig.label_width) != null ? _k : cardLabel == null ? void 0 : cardLabel.width) != null ? _l : cardLayout == null ? void 0 : cardLayout.label_width) != null ? _m : cardConfig == null ? void 0 : cardConfig.label_width) != null ? _n : 100,
-        hero_size: normalizeHeroSize(
-          (_w = (_v = (_u = (_t = (_s = (_r = (_q = (_p = (_o = entityLabel == null ? void 0 : entityLabel.hero_size) != null ? _o : entityLabel == null ? void 0 : entityLabel.heroSize) != null ? _p : entityConfig.hero_size) != null ? _q : entityConfig.heroSize) != null ? _r : cardLabel == null ? void 0 : cardLabel.hero_size) != null ? _s : cardLabel == null ? void 0 : cardLabel.heroSize) != null ? _t : cardLayout == null ? void 0 : cardLayout.hero_size) != null ? _u : cardLayout == null ? void 0 : cardLayout.heroSize) != null ? _v : cardConfig == null ? void 0 : cardConfig.hero_size) != null ? _w : cardConfig == null ? void 0 : cardConfig.heroSize,
+        width: (_n = (_m = (_l = (_k = (_j = entityLabel == null ? void 0 : entityLabel.width) != null ? _j : entityConfig.label_width) != null ? _k : cardLabel == null ? void 0 : cardLabel.width) != null ? _l : cardLayout == null ? void 0 : cardLayout.label_width) != null ? _m : cardConfig == null ? void 0 : cardConfig.label_width) != null ? _n : 100
+      },
+      hero: {
+        size: normalizeHeroSize(
+          (_y = (_x = (_w = (_v = (_u = (_t = (_s = (_r = (_q = (_p = (_o = entityHero == null ? void 0 : entityHero.size) != null ? _o : entityLabel == null ? void 0 : entityLabel.hero_size) != null ? _p : entityLabel == null ? void 0 : entityLabel.heroSize) != null ? _q : entityConfig.hero_size) != null ? _r : entityConfig.heroSize) != null ? _s : cardHero == null ? void 0 : cardHero.size) != null ? _t : cardLabel == null ? void 0 : cardLabel.hero_size) != null ? _u : cardLabel == null ? void 0 : cardLabel.heroSize) != null ? _v : cardLayout == null ? void 0 : cardLayout.hero_size) != null ? _w : cardLayout == null ? void 0 : cardLayout.heroSize) != null ? _x : cardConfig == null ? void 0 : cardConfig.hero_size) != null ? _y : cardConfig == null ? void 0 : cardConfig.heroSize,
           "medium"
         ),
-        font_size: heroFontSize
+        value_size: heroFontSize
       },
       height: clampSupportedRowHeight(rawHeight),
       height_explicit: heightExplicit
@@ -3727,8 +3731,8 @@
           ${this._formatAboveValueMarkup(stateDisplay, unit, false)}
         </div>
       </div>` : "";
-          const heroSize = (_q = layout.label.hero_size) != null ? _q : "small";
-          const heroFontSize = layout.label.font_size;
+          const heroSize = (_q = layout.hero.size) != null ? _q : "small";
+          const heroFontSize = layout.hero.value_size;
           const heroHeader = lp === "hero" ? `
       <div class="hero-line" data-hero-size="${heroSize}"${Number.isFinite(heroFontSize) ? ` style="--sbcp-hero-base-size:${heroFontSize}px"` : ""}>
         <div class="hero-header">
@@ -3856,7 +3860,7 @@ ${paintLayers}
             this._setStyleIfChanged(
               heroLine,
               "--sbcp-hero-base-size",
-              Number.isFinite(ecfg.layout.label.font_size) ? `${ecfg.layout.label.font_size}px` : null
+              Number.isFinite(ecfg.layout.hero.value_size) ? `${ecfg.layout.hero.value_size}px` : null
             );
             heroHeader.innerHTML = `<span class="hero-label label-left-text">${escapeHtml(rowViewModel.name)}</span><span class="hero-value" data-display="${this._encodeDataAttr(display)}" data-unit="${this._encodeDataAttr(displayUnit)}">${this._formatRightValueMarkup(display, displayUnit, false)}</span>`;
           }
@@ -4576,9 +4580,10 @@ ${paintLayers}
           const nextTarget = this._cloneDeep(target);
           const nextLayout = this._cloneDeep(nextTarget.layout);
           const nextLabel = this._isObject(nextLayout.label) ? this._cloneDeep(nextLayout.label) : null;
+          const nextHero = this._isObject(nextLayout.hero) ? this._cloneDeep(nextLayout.hero) : null;
           const height = this._normalizeNumberValue(nextLayout.height);
           const width = this._normalizeNumberValue(nextLabel == null ? void 0 : nextLabel.width);
-          const fontSize = this._normalizeHeroFontSizeValue(nextLabel == null ? void 0 : nextLabel.font_size);
+          const valueSize = this._normalizeHeroValueSizeValue(nextHero == null ? void 0 : nextHero.value_size);
           const position = this._normalizeTextValue(nextLabel == null ? void 0 : nextLabel.position).trim();
           if (height !== null && height >= 24) {
             nextLayout.height = height;
@@ -4599,15 +4604,22 @@ ${paintLayers}
             } else {
               delete nextLabel.width;
             }
-            if (fontSize !== null) {
-              nextLabel.font_size = fontSize;
-            } else {
-              delete nextLabel.font_size;
-            }
             if (Object.keys(nextLabel).length) {
               nextLayout.label = nextLabel;
             } else {
               delete nextLayout.label;
+            }
+          }
+          if (nextHero) {
+            if (valueSize !== null) {
+              nextHero.value_size = valueSize;
+            } else {
+              delete nextHero.value_size;
+            }
+            if (Object.keys(nextHero).length) {
+              nextLayout.hero = nextHero;
+            } else {
+              delete nextLayout.hero;
             }
           }
           if (Object.keys(nextLayout).length) {
@@ -4797,9 +4809,11 @@ ${paintLayers}
             case "peak":
               return ["enabled", "color"];
             case "layout":
-              return ["height", "label"];
+              return ["height", "label", "hero"];
             case "layout.label":
-              return ["position", "hero_size", "font_size", "width"];
+              return ["position", "hero_size", "width"];
+            case "layout.hero":
+              return ["size", "value_size"];
             case "formatting":
               return ["unit", "decimal"];
             case "bar":
@@ -5260,7 +5274,7 @@ ${paintLayers}
           return this._getScopedValue(scope, ["unit"]) !== void 0 || this._getScopedValue(scope, ["decimal"]) !== void 0;
         }
         _getScopedLayoutValue(scope, key) {
-          var _a, _b, _c, _d, _e, _f, _g, _h;
+          var _a, _b, _c, _d, _e, _f, _g, _h, _i;
           if (key === "height") {
             return (_b = (_a = this._getScopedValue(scope, ["layout", "height"])) != null ? _a : this._getScopedValue(scope, ["height"])) != null ? _b : "";
           }
@@ -5271,10 +5285,10 @@ ${paintLayers}
             return (_f = (_e = this._getScopedValue(scope, ["layout", "label", "width"])) != null ? _e : this._getScopedValue(scope, ["label_width"])) != null ? _f : "";
           }
           if (key === "hero_size") {
-            return (_g = this._getScopedValue(scope, ["layout", "label", "hero_size"])) != null ? _g : "";
+            return (_h = (_g = this._getScopedValue(scope, ["layout", "hero", "size"])) != null ? _g : this._getScopedValue(scope, ["layout", "label", "hero_size"])) != null ? _h : "";
           }
-          if (key === "font_size") {
-            return (_h = this._getScopedValue(scope, ["layout", "label", "font_size"])) != null ? _h : "";
+          if (key === "value_size") {
+            return (_i = this._getScopedValue(scope, ["layout", "hero", "value_size"])) != null ? _i : "";
           }
           return "";
         }
@@ -5289,10 +5303,10 @@ ${paintLayers}
             return this._getEffectiveScopedDisplayValue(scope, ["layout", "label", "width"], [["label_width"]]);
           }
           if (key === "hero_size") {
-            return this._getEffectiveScopedDisplayValue(scope, ["layout", "label", "hero_size"]);
+            return this._getEffectiveScopedDisplayValue(scope, ["layout", "hero", "size"], [["layout", "label", "hero_size"]]);
           }
-          if (key === "font_size") {
-            return this._getEffectiveScopedDisplayValue(scope, ["layout", "label", "font_size"]);
+          if (key === "value_size") {
+            return this._getEffectiveScopedDisplayValue(scope, ["layout", "hero", "value_size"]);
           }
           return "";
         }
@@ -5314,8 +5328,8 @@ ${paintLayers}
             prunePaths: [["layout", "label"], ["layout"]],
             rerender: true
           });
-          this._removeCanonicalScopedValue(scope, ["layout", "label", "font_size"], {
-            prunePaths: [["layout", "label"], ["layout"]],
+          this._removeCanonicalScopedValue(scope, ["layout", "hero"], {
+            prunePaths: [["layout"]],
             rerender: true
           });
           return true;
@@ -5324,37 +5338,39 @@ ${paintLayers}
           return this._setScopedLayoutLabelPosition({ type: "card" }, value);
         }
         _setScopedLayoutHeroSize(scope, value) {
-          if (!value || value === "medium") {
-            return this._removeCanonicalScopedValue(scope, ["layout", "label", "hero_size"], {
-              prunePaths: [["layout", "label"], ["layout"]]
+          if (!value) {
+            return this._removeCanonicalScopedValue(scope, ["layout", "hero", "size"], {
+              deprecatedKeys: [["layout", "label", "hero_size"]],
+              prunePaths: [["layout", "hero"], ["layout"]]
             });
           }
-          return this._setCanonicalScopedValue(scope, ["layout", "label", "hero_size"], value, {
-            prunePaths: [["layout", "label"], ["layout"]]
+          return this._setCanonicalScopedValue(scope, ["layout", "hero", "size"], value, {
+            deprecatedKeys: [["layout", "label", "hero_size"]],
+            prunePaths: [["layout", "hero"], ["layout"]]
           });
         }
         _setLayoutHeroSize(value) {
           return this._setScopedLayoutHeroSize({ type: "card" }, value);
         }
-        _normalizeHeroFontSizeValue(value) {
+        _normalizeHeroValueSizeValue(value) {
           const numericValue = this._normalizeNumberValue(value);
           if (numericValue === null) return null;
           return Math.min(112, Math.max(12, numericValue));
         }
-        _setScopedLayoutHeroFontSize(scope, value) {
+        _setScopedLayoutHeroValueSize(scope, value) {
           if (value === "" || value === null || value === void 0) {
-            return this._removeCanonicalScopedValue(scope, ["layout", "label", "font_size"], {
-              prunePaths: [["layout", "label"], ["layout"]]
+            return this._removeCanonicalScopedValue(scope, ["layout", "hero", "value_size"], {
+              prunePaths: [["layout", "hero"], ["layout"]]
             });
           }
-          const fontSize = this._normalizeHeroFontSizeValue(value);
-          if (fontSize === null) return false;
-          return this._setCanonicalScopedValue(scope, ["layout", "label", "font_size"], fontSize, {
-            prunePaths: [["layout", "label"], ["layout"]]
+          const valueSize = this._normalizeHeroValueSizeValue(value);
+          if (valueSize === null) return false;
+          return this._setCanonicalScopedValue(scope, ["layout", "hero", "value_size"], valueSize, {
+            prunePaths: [["layout", "hero"], ["layout"]]
           });
         }
-        _setLayoutHeroFontSize(value) {
-          return this._setScopedLayoutHeroFontSize({ type: "card" }, value);
+        _setLayoutHeroValueSize(value) {
+          return this._setScopedLayoutHeroValueSize({ type: "card" }, value);
         }
         _setScopedLayoutHeight(scope, value) {
           const numericValue = this._normalizeNumberValue(value);
@@ -5396,8 +5412,8 @@ ${paintLayers}
             let nextTarget = this._deletePathValue(target, ["layout", "height"]);
             nextTarget = this._deletePathValue(nextTarget, ["layout", "label", "position"]);
             nextTarget = this._deletePathValue(nextTarget, ["layout", "label", "hero_size"]);
-            nextTarget = this._deletePathValue(nextTarget, ["layout", "label", "font_size"]);
             nextTarget = this._deletePathValue(nextTarget, ["layout", "label", "width"]);
+            nextTarget = this._deletePathValue(nextTarget, ["layout", "hero"]);
             nextTarget = this._deletePathValue(nextTarget, ["height"]);
             nextTarget = this._deletePathValue(nextTarget, ["label_position"]);
             nextTarget = this._deletePathValue(nextTarget, ["label_width"]);
@@ -5410,7 +5426,10 @@ ${paintLayers}
           var _a, _b;
           const layoutValue = (_a = this._getScopedValue(scope, ["layout"])) != null ? _a : {};
           const labelValue = this._isObject(layoutValue) ? (_b = layoutValue.label) != null ? _b : {} : {};
-          if (this._isObject(layoutValue) && (Object.prototype.hasOwnProperty.call(layoutValue, "height") || this._isObject(labelValue) && (Object.prototype.hasOwnProperty.call(labelValue, "position") || Object.prototype.hasOwnProperty.call(labelValue, "hero_size") || Object.prototype.hasOwnProperty.call(labelValue, "font_size") || Object.prototype.hasOwnProperty.call(labelValue, "width")))) {
+          if (this._isObject(layoutValue) && (Object.prototype.hasOwnProperty.call(layoutValue, "height") || this._isObject(labelValue) && (Object.prototype.hasOwnProperty.call(labelValue, "position") || Object.prototype.hasOwnProperty.call(labelValue, "hero_size") || Object.prototype.hasOwnProperty.call(labelValue, "width")))) {
+            return true;
+          }
+          if (this._isObject(layoutValue) && this._isObject(layoutValue.hero) && Object.keys(layoutValue.hero).length) {
             return true;
           }
           return this._getScopedValue(scope, ["height"]) !== void 0 || this._getScopedValue(scope, ["label_position"]) !== void 0 || this._getScopedValue(scope, ["label_width"]) !== void 0;
@@ -7524,7 +7543,7 @@ ${paintLayers}
             const fillStyle = this._getFillStyleValue();
             const layoutLabelPosition = this._getScopedLayoutValue({ type: "card" }, "position") || "left";
             const layoutHeroSize = this._getScopedLayoutValue({ type: "card" }, "hero_size") || "medium";
-            const layoutHeroFontSize = this._getScopedLayoutValue({ type: "card" }, "font_size");
+            const layoutHeroValueSize = this._getScopedLayoutValue({ type: "card" }, "value_size");
             const layoutHeight = this._getScopedLayoutValue({ type: "card" }, "height");
             const layoutLabelWidth = this._getScopedLayoutValue({ type: "card" }, "width");
             const barColor = this._getScopedBarColorValue({ type: "card" });
@@ -8181,8 +8200,8 @@ ${paintLayers}
                         </select>
                       </div>
                       <div class="field-row">
-                        <label for="entity-${index}-label-font-size">Maximum font size</label>
-                        <input id="entity-${index}-label-font-size" type="number" min="12" max="112" step="1" data-kind="entity-layout-label-font-size" data-index="${index}" value="${this._escapeAttribute(this._getEffectiveScopedLayoutValue(scope, "font_size"))}" placeholder="use Hero size preset">
+                        <label for="entity-${index}-hero-value-size">Maximum font size</label>
+                        <input id="entity-${index}-hero-value-size" type="number" min="12" max="112" step="1" data-kind="entity-layout-hero-value-size" data-index="${index}" value="${this._escapeAttribute(this._getEffectiveScopedLayoutValue(scope, "value_size"))}" placeholder="use Hero size preset">
                         <div class="section-note">The hero value may render smaller when needed to fit. A custom value overrides the Hero size preset.</div>
                       </div>
                       ` : ""}
@@ -8897,8 +8916,8 @@ ${paintLayers}
               </select>
             </div>
             <div class="field-row">
-              <label for="layout-label-font-size">Maximum font size</label>
-              <input id="layout-label-font-size" type="number" min="12" max="112" step="1" data-field="layout-label-font-size" value="${this._escapeAttribute(layoutHeroFontSize)}" placeholder="use Hero size preset">
+              <label for="layout-hero-value-size">Maximum font size</label>
+              <input id="layout-hero-value-size" type="number" min="12" max="112" step="1" data-field="layout-hero-value-size" value="${this._escapeAttribute(layoutHeroValueSize)}" placeholder="use Hero size preset">
               <div class="section-note">The hero value may render smaller when needed to fit. A custom value overrides the Hero size preset.</div>
             </div>
             ` : ""}
@@ -9293,7 +9312,7 @@ ${paintLayers}
           if (field === "formatting-decimal") return void this._setScopedFormattingDecimal({ type: "card" }, value);
           if (field === "layout-label-position") return void this._setLayoutLabelPosition(value);
           if (field === "layout-label-hero-size") return void this._setLayoutHeroSize(value);
-          if (field === "layout-label-font-size") return void this._setLayoutHeroFontSize(value);
+          if (field === "layout-hero-value-size") return void this._setLayoutHeroValueSize(value);
           if (field === "layout-height") return void this._setLayoutHeight(value);
           if (field === "layout-label-width") return void this._setScopedLayoutLabelWidth({ type: "card" }, value);
           if (field === "scale-min") return void this._setScaleBound("min", value);
@@ -9383,8 +9402,8 @@ ${paintLayers}
           if (kind === "entity-layout-label-hero-size") {
             return void this._setScopedLayoutHeroSize({ type: "entity", index: Number(target.dataset.index) }, value);
           }
-          if (kind === "entity-layout-label-font-size") {
-            return void this._setScopedLayoutHeroFontSize({ type: "entity", index: Number(target.dataset.index) }, value);
+          if (kind === "entity-layout-hero-value-size") {
+            return void this._setScopedLayoutHeroValueSize({ type: "entity", index: Number(target.dataset.index) }, value);
           }
           if (kind === "entity-layout-label-width") {
             return void this._setScopedLayoutLabelWidth({ type: "entity", index: Number(target.dataset.index) }, value);

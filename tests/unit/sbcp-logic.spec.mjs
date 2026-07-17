@@ -210,17 +210,16 @@ describe('Sensor Bar Card Plus logic', () => {
 
     expect(cfg.layout).toEqual({
       label: {
-        font_size: null,
-        hero_size: 'medium',
         position: 'left',
         width: 160,
       },
+      hero: { size: 'medium', value_size: null },
       height: 44,
       height_explicit: true,
     });
   });
 
-  it('accepts hero label positioning and falls back invalid positions to left', () => {
+  it('normalizes modern and legacy hero sizes with modern precedence', () => {
     const card = createCard();
     const heroCfg = card.normalizeCardConfig({
       layout: {
@@ -242,36 +241,45 @@ describe('Sensor Bar Card Plus logic', () => {
     });
 
     expect(heroCfg.layout.label.position).toBe('hero');
-    expect(heroCfg.layout.label.hero_size).toBe('large');
+    expect(heroCfg.layout.hero.size).toBe('large');
     expect(heroCfg.entities[0].layout.label.position).toBe('hero');
-    expect(heroCfg.entities[0].layout.label.hero_size).toBe('large');
+    expect(heroCfg.entities[0].layout.hero.size).toBe('large');
     expect(invalidCfg.layout.label.position).toBe('left');
-    expect(invalidCfg.layout.label.hero_size).toBe('medium');
+    expect(invalidCfg.layout.hero.size).toBe('medium');
+
+    const modernCfg = card.normalizeCardConfig({
+      layout: {
+        label: { position: 'hero', hero_size: 'small' },
+        hero: { size: 'large' },
+      },
+      entities: [{ entity: 'sensor.row' }],
+    });
+    expect(modernCfg.layout.hero.size).toBe('large');
   });
 
-  it('normalizes hero font sizes and ignores them outside hero mode', () => {
+  it('normalizes hero value sizes and preserves per-entity inheritance', () => {
     const card = createCard();
-    const normalizeFontSize = (fontSize, position = 'hero') => card.normalizeCardConfig({
-      layout: { label: { position, hero_size: 'small', font_size: fontSize } },
+    const normalizeValueSize = (valueSize, position = 'hero') => card.normalizeCardConfig({
+      layout: { label: { position }, hero: { size: 'small', value_size: valueSize } },
       entities: [{ entity: 'sensor.row' }],
-    }).layout.label.font_size;
+    }).layout.hero.value_size;
 
-    expect(normalizeFontSize(72)).toBe(72);
-    expect(normalizeFontSize(1)).toBe(12);
-    expect(normalizeFontSize(200)).toBe(112);
-    expect(normalizeFontSize('72px')).toBeNull();
-    expect(normalizeFontSize('72')).toBeNull();
-    expect(normalizeFontSize(72, 'above')).toBeNull();
+    expect(normalizeValueSize(72)).toBe(72);
+    expect(normalizeValueSize(1)).toBe(12);
+    expect(normalizeValueSize(200)).toBe(112);
+    expect(normalizeValueSize('72px')).toBeNull();
+    expect(normalizeValueSize('72')).toBeNull();
+    expect(normalizeValueSize(72, 'above')).toBeNull();
 
     const inheritedCfg = card.normalizeCardConfig({
-      layout: { label: { position: 'hero', hero_size: 'small', font_size: 72 } },
+      layout: { label: { position: 'hero' }, hero: { size: 'small', value_size: 72 } },
       entities: [{ entity: 'sensor.inherited' }, {
         entity: 'sensor.override',
-        layout: { label: { font_size: 80 } },
+        layout: { hero: { value_size: 80 } },
       }],
     });
-    expect(inheritedCfg.entities[0].layout.label.font_size).toBe(72);
-    expect(inheritedCfg.entities[1].layout.label.font_size).toBe(80);
+    expect(inheritedCfg.entities[0].layout.hero.value_size).toBe(72);
+    expect(inheritedCfg.entities[1].layout.hero.value_size).toBe(80);
   });
 
   it('rendering reads the nested layout shape', () => {
@@ -377,11 +385,10 @@ describe('Sensor Bar Card Plus logic', () => {
 
     expect(cfg.layout).toEqual({
       label: {
-        font_size: null,
-        hero_size: 'medium',
         position: 'above',
         width: 180,
       },
+      hero: { size: 'medium', value_size: null },
       height: 44,
       height_explicit: true,
     });
@@ -2298,11 +2305,10 @@ describe('Sensor Bar Card Plus logic', () => {
     const row = cfg.entities[0];
     expect(row.layout).toEqual({
       label: {
-        font_size: null,
-        hero_size: 'medium',
         position: 'above',
         width: 180,
       },
+      hero: { size: 'medium', value_size: null },
       height: 50,
       height_explicit: true,
     });
@@ -2378,11 +2384,10 @@ describe('Sensor Bar Card Plus logic', () => {
     const row = cfg.entities[0];
     expect(row.layout).toEqual({
       label: {
-        font_size: null,
-        hero_size: 'medium',
         position: 'left',
         width: 140,
       },
+      hero: { size: 'medium', value_size: null },
       height: 40,
       height_explicit: true,
     });
@@ -2458,11 +2463,10 @@ describe('Sensor Bar Card Plus logic', () => {
     const row = cfg.entities[0];
     expect(row.layout).toEqual({
       label: {
-        font_size: null,
-        hero_size: 'medium',
         position: 'inside',
         width: 200,
       },
+      hero: { size: 'medium', value_size: null },
       height: 50,
       height_explicit: true,
     });
@@ -3789,7 +3793,7 @@ describe('Sensor Bar Card Plus logic', () => {
     expect(html).toContain('data-hero-size="medium"');
   });
 
-  it('uses a custom hero font size ahead of presets and clears it when absent', () => {
+  it('uses a custom hero value size ahead of presets and clears it when absent', () => {
     const card = createCard();
     card._hass.states = {
       'sensor.hero': {
@@ -3797,25 +3801,25 @@ describe('Sensor Bar Card Plus logic', () => {
         attributes: { friendly_name: 'Solar Production', unit_of_measurement: 'kW' },
       },
     };
-    const buildHero = (label) => {
+    const buildHero = (layout) => {
       const cfg = card.normalizeCardConfig({
-        layout: { label },
+        layout,
         entities: [{ entity: 'sensor.hero' }],
       });
       return card._buildRow(cfg.entities[0], '7.2', 'kW', 72, '#4a9eff', null, null, null, null, '#888', '#888', 0, 10);
     };
 
-    expect(buildHero({ position: 'hero', hero_size: 'small', font_size: 72 }))
+    expect(buildHero({ label: { position: 'hero', hero_size: 'small' }, hero: { size: 'small', value_size: 72 } }))
       .toContain('data-hero-size="small" style="--sbcp-hero-base-size:72px"');
-    expect(buildHero({ position: 'hero', hero_size: 'small' }))
+    expect(buildHero({ label: { position: 'hero' }, hero: { size: 'small' } }))
       .toContain('data-hero-size="small"');
-    expect(buildHero({ position: 'hero', hero_size: 'medium' }))
+    expect(buildHero({ label: { position: 'hero' }, hero: { size: 'medium' } }))
       .toContain('data-hero-size="medium"');
-    expect(buildHero({ position: 'hero', hero_size: 'large' }))
+    expect(buildHero({ label: { position: 'hero' }, hero: { size: 'large' } }))
       .toContain('data-hero-size="large"');
-    expect(buildHero({ position: 'hero', hero_size: 'small' }))
+    expect(buildHero({ label: { position: 'hero' }, hero: { size: 'small' } }))
       .not.toContain('--sbcp-hero-base-size:');
-    expect(buildHero({ position: 'above', font_size: 72 }))
+    expect(buildHero({ label: { position: 'above' }, hero: { value_size: 72 } }))
       .not.toContain('--sbcp-hero-base-size:');
   });
 

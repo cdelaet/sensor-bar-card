@@ -116,7 +116,7 @@ What the Visual Editor supports:
 - structured YAML output for edited fields
 - card-level defaults with per-entity overrides
 - dynamic `scale`, `target`, and `baseline` values driven by Home Assistant entities
-- Hero label layout, Hero size presets, and optional custom maximum Hero font size directly from the editor
+- Hero label layout, Hero size presets and an optional custom Hero value size directly from the editor
 - controls for target, baseline, peak, and needle behavior
 - segment and gradient stop editing with live previews
 - entity management actions for move, duplicate, and remove
@@ -125,7 +125,7 @@ What the Visual Editor supports:
 
 ![Visual editor](images/visual-editor.png)
 
-The editor can configure the same structured layout options used in YAML, including Hero label mode and the Hero size presets. That means a new dashboard can start from the Home Assistant card picker, switch to Hero layout, choose a size, and still produce clean YAML behind the scenes.
+The editor can configure the same structured layout options used in YAML, including Hero label mode and the Hero size presets. That means a new dashboard can start from the Home Assistant card picker, switch to Hero layout, choose a Hero size (and optionally a custom Hero value size), and still produce clean YAML behind the scenes.
 
 Example structured config:
 
@@ -705,36 +705,42 @@ Hero labels support three built-in size presets:
 - `medium` (default)
 - `large`
 
-The selected size defines the base Hero typography. All responsive Hero typography is derived automatically from that base size, so the card continues to adapt cleanly as available space changes.
+These presets control the base Hero typography. For finer control, see **Custom Hero Value Size** below.
+
+The selected preset defines the base Hero typography. All responsive Hero typography is derived automatically from that base size, so the card continues to adapt cleanly as available space changes.
 
 ```yaml
 layout:
   label:
     position: hero
-    hero_size: large
+  hero:
+    size: large
 ```
 
-If omitted, `hero_size` defaults to `medium`.
+If omitted, `layout.hero.size` defaults to `medium`.
 
-### Custom Hero Font Size
+> **Compatibility**: layout.label.hero_size remains supported as a legacy alias. New configurations should use `layout.hero.size`. If both are specified, `layout.hero.size` takes precedence.
 
-For finer control, Hero mode also supports an optional custom maximum font size.
+### Custom Hero Value Size
+
+For finer control, Hero mode also supports an optional custom maximum Hero value size using `layout.hero.value_size`.
 
 ```yaml
 layout:
   label:
     position: hero
-    hero_size: medium
-    font_size: 72
+  hero:
+    size: medium
+    value_size: 72
 ```
 
-`font_size` specifies the preferred maximum Hero value size in pixels. The responsive layout engine still automatically reduces the rendered size whenever necessary to fit the available space.
+`value_size` specifies the preferred maximum Hero value size in pixels. The responsive layout engine still automatically reduces the rendered size whenever necessary to fit the available space.
 
-When both `hero_size` and `font_size` are specified, `font_size` takes precedence. The `hero_size` preset remains available as the fallback if `font_size` is later removed.
+When both `layout.hero.size` and `layout.hero.value_size` are specified, `value_size` takes precedence. The `size` preset remains available as the fallback if `value_size` is later removed.
 
 Supported values are **12** through **112** pixels. Values outside this range are automatically clamped.
 
-`font_size` only applies when `layout.label.position: hero`. It is ignored for all other label positions.
+`layout.hero.size` and `layout.hero.value_size` only apply when `layout.label.position: hero`. They're ignored for all other label positions.
 
 
 ![Hero size comparison](images/hero-label-sizes.png)
@@ -771,7 +777,7 @@ Hero label mode uses a dedicated responsive layout strategy that prioritizes the
 2. Truncate the label if necessary.
 3. Hide the label when truncation is no longer sufficient.
 4. Hide the unit if additional space is required.
-5. Reduce the value size only when the preferred Hero size no longer fits.
+5. Reduce the value size only when the configured Hero size no longer fits.
 6. Hide the value only as an absolute last resort.
 
 This prioritization keeps the most important information visible while preserving a stable, premium Hero appearance across a wide range of dashboard widths.
@@ -1513,11 +1519,12 @@ The modern configuration model is structured by feature area. Card-level setting
 ```text
 layout
 ├── height
-└── label
-    ├── position
-    ├── hero_size
-    ├── font_size
-    └── width
+├── label
+│   ├── position
+│   └── width
+└── hero
+    ├── size
+    └── value_size
 
 scale
 ├── min
@@ -1532,9 +1539,17 @@ bar
 ├── segment_space
 ├── color
 ├── solid_fill
+├── animated
 ├── needle
-├── segments
-└── gradient_stops
+│   ├── show
+│   └── color
+├── segments[]
+│   ├── from
+│   ├── to
+│   └── color
+└── gradient_stops[]
+    ├── pos
+    └── color
 
 target
 ├── enabled
@@ -1572,7 +1587,8 @@ formatting
 |---|---:|---|---|
 | `layout.height` | `38` | number | Row/bar height. Explicit values are respected; very small values normalize to a usable minimum. |
 | `layout.label.position` | `left` | `left`, `above`, `inside`, `off`, `hero` | Label placement mode. |
-| `layout.label.hero_size` | `medium` | `small`, `medium`, `large` | Base Hero typography size. Applies only when `position: hero`. |
+| `layout.hero.size` | `medium` | `small`, `medium`, `large` | Built-in Hero typography preset. Applies only when `layout.label.position: hero`. |
+| `layout.hero.value_size` | `null` | `12–112` | Optional maximum Hero value size in pixels. Overrides `layout.hero.size` while preserving automatic responsive fitting. Applies only when `layout.label.position: hero`. |
 | `layout.label.width` | `100` | number | Shared label column width for `left` label mode. |
 | `scale.min.fixed` | `0` | number | Fixed lower bound of the active scale. |
 | `scale.min.entity` | `null` | entity id | Dynamic lower bound entity. |
@@ -1582,9 +1598,12 @@ formatting
 | `bar.segment_space` | `percent` | `percent`, `scale` | Determines whether `bar.segments` are interpreted as percentages of the bar or as actual values on the configured scale. |
 | `bar.color` | `#4a9eff` | CSS color | Solid or fallback fill color. |
 | `bar.solid_fill` | `false` | boolean | Samples the active color and renders the revealed fill as one solid color. |
-| `bar.needle` | `false` | boolean or object | Enables needle mode using `true` or `{ show, color }`. |
-| `bar.segments` | default bands | list | Segment definitions for `bands`, `soft_bands`, and `band_gradient`. |
-| `bar.gradient_stops` | `null` | list | Gradient stop definitions for `gradient`. |
+| `bar.animated` | `true` | boolean | Enables or disables value-change animations for the revealed fill and related visual elements. |
+| `bar.needle` | `false` | boolean or object | Enables needle mode using `true`, or accepts the expanded `{ show, color }` configuration. |
+| `bar.needle.show` | `false` | boolean | Explicitly enables or disables needle mode in expanded configuration. |
+| `bar.needle.color` | `#ffffff` | CSS color | Sets the needle body and glow color. |
+| `bar.segments` | default bands | list | Segment definitions for `bands`, `soft_bands`, and `band_gradient`. Each item supports `from`, `to`, and `color`. |
+| `bar.gradient_stops` | `null` | list | Gradient stop definitions for `gradient`. Each item supports `pos` and `color`. |
 | `target.enabled` | auto | `true`, `false`, omitted | Controls target marker behavior. Omitted means automatic based on configured target source. |
 | `target.at.fixed` | `null` | number | Fixed target value. |
 | `target.at.entity` | `null` | entity id | Dynamic target entity. |
@@ -1603,7 +1622,7 @@ formatting
 
 Legacy flat options are listed separately in the Legacy Compatibility / Migration section. They remain supported, but new dashboards should prefer the structured paths above.
 
-## Card-Level Options
+## Top-Level Card Options
 
 | Option | Type | Default | Description |
 |---|---|---|---|
@@ -1640,7 +1659,7 @@ Legacy flat options are listed separately in the Legacy Compatibility / Migratio
 | `decimal` | number | `null` | Legacy alias for `formatting.decimal` |
 | `unit` | string | `null` | Legacy alias for `formatting.unit` |
 
-## Entity-Level Options
+## Top-Level Entity Options
 
 Entity-level configuration uses the same structured option groups as card-level configuration. Values set on an entity override the card-level defaults for that row only.
 
@@ -1676,9 +1695,12 @@ Entity-level configuration uses the same structured option groups as card-level 
 layout:
   label:
     position: left
-    # Used when position is hero: small, medium, or large
-    hero_size: medium
     width: 160
+  hero:
+    # Used when label.position is hero
+    size: medium
+    # Optional maximum Hero value size
+    value_size: 72
   height: 38
 
 scale:
@@ -1741,7 +1763,7 @@ Notes:
 - `bar.segment_space` supports `percent` and `scale`
 - `bar.gradient_stops[].pos` accepts both numeric values like `50` and percentage strings like `50%`
 
-## Fill Styles
+## Fill Styles Reference
 
 | `fill_style` | Description |
 |---|---|
@@ -1749,7 +1771,7 @@ Notes:
 | `gradient` | Continuous gradient from `bar.gradient_stops`. ⚠️ Note: Gradient stops are always defined on a normalized 0-100 scale, where 0 represents the start of the bar and 100 the end. To keep gradients working consistently, they cannot be set by absolute values. If you want to use absolute values, use a `band_gradient` instead. |
 | `bands` | Hard segment transitions using `bar.segments` |
 | `soft_bands` | Segment-based colors with short blended transitions at eligible boundaries |
-| `band_gradient` | Continuous interpolation segment colors on the active scale |
+| `band_gradient` | Continuous interpolation of segment colors on the active scale |
 
 `bands` remains the implicit default when no fill style is configured. This preserves backwards compatibility with the original Sensor Bar Card and ensures older dashboards continue to render identically. New dashboards may specify `bar.fill_style` explicitly, but this is not required.
 
@@ -1943,6 +1965,7 @@ You do not need to migrate existing dashboards immediately. For new dashboards, 
 | `segments` | `bar.segments` |
 | `animated` | `bar.animated` |
 | `baseline` | `baseline.at.fixed`, `baseline.at.entity`, or `baseline.at: 50%` |
+| `layout.label.hero_size` | `layout.hero.size` |
 
 Legacy:
 

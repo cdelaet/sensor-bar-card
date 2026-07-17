@@ -3242,8 +3242,8 @@ _getAboveTargetLayerGeometry(targetPct = null) {
           ${this._formatAboveValueMarkup(stateDisplay, unit, false)}
         </div>
       </div>` : '';
-    const heroSize = layout.label.hero_size ?? 'small';
-    const heroFontSize = layout.label.font_size;
+    const heroSize = layout.hero.size ?? 'small';
+    const heroFontSize = layout.hero.value_size;
     const heroHeader = lp === 'hero' ? `
       <div class="hero-line" data-hero-size="${heroSize}"${Number.isFinite(heroFontSize) ? ` style="--sbcp-hero-base-size:${heroFontSize}px"` : ''}>
         <div class="hero-header">
@@ -3385,7 +3385,7 @@ ${paintLayers}
       this._setStyleIfChanged(
         heroLine,
         '--sbcp-hero-base-size',
-        Number.isFinite(ecfg.layout.label.font_size) ? `${ecfg.layout.label.font_size}px` : null
+        Number.isFinite(ecfg.layout.hero.value_size) ? `${ecfg.layout.hero.value_size}px` : null
       );
       heroHeader.innerHTML = `<span class="hero-label label-left-text">${escapeHtml(rowViewModel.name)}</span><span class="hero-value" data-display="${this._encodeDataAttr(display)}" data-unit="${this._encodeDataAttr(displayUnit)}">${this._formatRightValueMarkup(display, displayUnit, false)}</span>`;
     }

@@ -5515,14 +5515,15 @@ describe('Sensor Bar Card Plus editor', () => {
       layout: {
         label: {
           position: 'hero',
+          hero_size: 'large',
         },
       },
     });
 
     const heroSize = editor.shadowRoot.querySelector('#layout-label-hero-size');
     expect(heroSize).not.toBeNull();
-    expect(heroSize.value).toBe('medium');
-    expect(editor.shadowRoot.querySelector('#layout-label-font-size')).not.toBeNull();
+    expect(heroSize.value).toBe('large');
+    expect(editor.shadowRoot.querySelector('#layout-hero-value-size')).not.toBeNull();
   });
 
   it('hero size control does not appear for non-hero label positions', () => {
@@ -5538,10 +5539,10 @@ describe('Sensor Bar Card Plus editor', () => {
     });
 
     expect(editor.shadowRoot.querySelector('#layout-label-hero-size')).toBeNull();
-    expect(editor.shadowRoot.querySelector('#layout-label-font-size')).toBeNull();
+    expect(editor.shadowRoot.querySelector('#layout-hero-value-size')).toBeNull();
   });
 
-  it('reads, writes, and clears hero maximum font size without changing the preset', () => {
+  it('reads, writes, and clears hero maximum value size without changing the preset', () => {
     const editor = createEditor();
     const events = trackConfigEvents(editor);
 
@@ -5551,12 +5552,12 @@ describe('Sensor Bar Card Plus editor', () => {
         label: {
           position: 'hero',
           hero_size: 'small',
-          font_size: 72,
         },
+        hero: { value_size: 72 },
       },
     });
 
-    const fontSize = editor.shadowRoot.querySelector('#layout-label-font-size');
+    const fontSize = editor.shadowRoot.querySelector('#layout-hero-value-size');
     expect(fontSize.value).toBe('72');
     expect(fontSize.getAttribute('min')).toBe('12');
     expect(fontSize.getAttribute('max')).toBe('112');
@@ -5566,16 +5567,16 @@ describe('Sensor Bar Card Plus editor', () => {
     expect(events.at(-1).detail.config.layout.label).toMatchObject({
       position: 'hero',
       hero_size: 'small',
-      font_size: 80,
     });
+    expect(events.at(-1).detail.config.layout.hero.value_size).toBe(80);
 
-    dispatchInput(editor.shadowRoot.querySelector('#layout-label-font-size'), '');
+    dispatchInput(editor.shadowRoot.querySelector('#layout-hero-value-size'), '');
     expect(events.at(-1).detail.config.layout.label.position).toBe('hero');
     expect(events.at(-1).detail.config.layout.label.hero_size).toBe('small');
-    expect(events.at(-1).detail.config.layout.label.font_size).toBeUndefined();
+    expect(events.at(-1).detail.config.layout.hero?.value_size).toBeUndefined();
   });
 
-  it('selecting small hero size emits layout.label.hero_size', () => {
+  it('selecting small hero size emits layout.hero.size', () => {
     const editor = createEditor();
     const events = trackConfigEvents(editor);
 
@@ -5591,10 +5592,11 @@ describe('Sensor Bar Card Plus editor', () => {
     dispatchChange(editor.shadowRoot.querySelector('#layout-label-hero-size'), 'small');
 
     expect(events.at(-1).detail.config.layout.label.position).toBe('hero');
-    expect(events.at(-1).detail.config.layout.label.hero_size).toBe('small');
+    expect(events.at(-1).detail.config.layout.hero.size).toBe('small');
+    expect(events.at(-1).detail.config.layout.label.hero_size).toBeUndefined();
   });
 
-  it('selecting large hero size emits layout.label.hero_size', () => {
+  it('selecting large hero size emits layout.hero.size', () => {
     const editor = createEditor();
     const events = trackConfigEvents(editor);
 
@@ -5610,10 +5612,11 @@ describe('Sensor Bar Card Plus editor', () => {
     dispatchChange(editor.shadowRoot.querySelector('#layout-label-hero-size'), 'large');
 
     expect(events.at(-1).detail.config.layout.label.position).toBe('hero');
-    expect(events.at(-1).detail.config.layout.label.hero_size).toBe('large');
+    expect(events.at(-1).detail.config.layout.hero.size).toBe('large');
+    expect(events.at(-1).detail.config.layout.label.hero_size).toBeUndefined();
   });
 
-  it('selecting medium hero size omits layout.label.hero_size as default', () => {
+  it('selecting medium hero size emits layout.hero.size', () => {
     const editor = createEditor();
     const events = trackConfigEvents(editor);
 
@@ -5630,6 +5633,7 @@ describe('Sensor Bar Card Plus editor', () => {
     dispatchChange(editor.shadowRoot.querySelector('#layout-label-hero-size'), 'medium');
 
     expect(events.at(-1).detail.config.layout.label.position).toBe('hero');
+    expect(events.at(-1).detail.config.layout.hero.size).toBe('medium');
     expect(events.at(-1).detail.config.layout.label.hero_size).toBeUndefined();
   });
 

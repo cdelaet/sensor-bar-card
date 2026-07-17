@@ -668,9 +668,10 @@ export class SensorBarCardPlusEditor extends HTMLElement {
     const nextTarget = this._cloneDeep(target);
     const nextLayout = this._cloneDeep(nextTarget.layout);
     const nextLabel = this._isObject(nextLayout.label) ? this._cloneDeep(nextLayout.label) : null;
+    const nextHero = this._isObject(nextLayout.hero) ? this._cloneDeep(nextLayout.hero) : null;
     const height = this._normalizeNumberValue(nextLayout.height);
     const width = this._normalizeNumberValue(nextLabel?.width);
-    const fontSize = this._normalizeHeroFontSizeValue(nextLabel?.font_size);
+    const valueSize = this._normalizeHeroValueSizeValue(nextHero?.value_size);
     const position = this._normalizeTextValue(nextLabel?.position).trim();
 
     if (height !== null && height >= 24) {
@@ -695,16 +696,24 @@ export class SensorBarCardPlusEditor extends HTMLElement {
         delete nextLabel.width;
       }
 
-      if (fontSize !== null) {
-        nextLabel.font_size = fontSize;
-      } else {
-        delete nextLabel.font_size;
-      }
-
       if (Object.keys(nextLabel).length) {
         nextLayout.label = nextLabel;
       } else {
         delete nextLayout.label;
+      }
+    }
+
+    if (nextHero) {
+      if (valueSize !== null) {
+        nextHero.value_size = valueSize;
+      } else {
+        delete nextHero.value_size;
+      }
+
+      if (Object.keys(nextHero).length) {
+        nextLayout.hero = nextHero;
+      } else {
+        delete nextLayout.hero;
       }
     }
 
@@ -923,9 +932,11 @@ export class SensorBarCardPlusEditor extends HTMLElement {
       case 'peak':
         return ['enabled', 'color'];
       case 'layout':
-        return ['height', 'label'];
+        return ['height', 'label', 'hero'];
       case 'layout.label':
-        return ['position', 'hero_size', 'font_size', 'width'];
+        return ['position', 'hero_size', 'width'];
+      case 'layout.hero':
+        return ['size', 'value_size'];
       case 'formatting':
         return ['unit', 'decimal'];
       case 'bar':
@@ -1463,11 +1474,12 @@ export class SensorBarCardPlusEditor extends HTMLElement {
         ?? '';
     }
     if (key === 'hero_size') {
-      return this._getScopedValue(scope, ['layout', 'label', 'hero_size'])
+      return this._getScopedValue(scope, ['layout', 'hero', 'size'])
+        ?? this._getScopedValue(scope, ['layout', 'label', 'hero_size'])
         ?? '';
     }
-    if (key === 'font_size') {
-      return this._getScopedValue(scope, ['layout', 'label', 'font_size'])
+    if (key === 'value_size') {
+      return this._getScopedValue(scope, ['layout', 'hero', 'value_size'])
         ?? '';
     }
     return '';
@@ -1484,10 +1496,10 @@ export class SensorBarCardPlusEditor extends HTMLElement {
       return this._getEffectiveScopedDisplayValue(scope, ['layout', 'label', 'width'], [['label_width']]);
     }
     if (key === 'hero_size') {
-      return this._getEffectiveScopedDisplayValue(scope, ['layout', 'label', 'hero_size']);
+      return this._getEffectiveScopedDisplayValue(scope, ['layout', 'hero', 'size'], [['layout', 'label', 'hero_size']]);
     }
-    if (key === 'font_size') {
-      return this._getEffectiveScopedDisplayValue(scope, ['layout', 'label', 'font_size']);
+    if (key === 'value_size') {
+      return this._getEffectiveScopedDisplayValue(scope, ['layout', 'hero', 'value_size']);
     }
     return '';
   }
@@ -1510,8 +1522,8 @@ export class SensorBarCardPlusEditor extends HTMLElement {
       prunePaths: [['layout', 'label'], ['layout']],
       rerender: true,
     });
-    this._removeCanonicalScopedValue(scope, ['layout', 'label', 'font_size'], {
-      prunePaths: [['layout', 'label'], ['layout']],
+    this._removeCanonicalScopedValue(scope, ['layout', 'hero'], {
+      prunePaths: [['layout']],
       rerender: true,
     });
     return true;
@@ -1522,13 +1534,15 @@ export class SensorBarCardPlusEditor extends HTMLElement {
   }
 
   _setScopedLayoutHeroSize(scope, value) {
-    if (!value || value === 'medium') {
-      return this._removeCanonicalScopedValue(scope, ['layout', 'label', 'hero_size'], {
-        prunePaths: [['layout', 'label'], ['layout']],
+    if (!value) {
+      return this._removeCanonicalScopedValue(scope, ['layout', 'hero', 'size'], {
+        deprecatedKeys: [['layout', 'label', 'hero_size']],
+        prunePaths: [['layout', 'hero'], ['layout']],
       });
     }
-    return this._setCanonicalScopedValue(scope, ['layout', 'label', 'hero_size'], value, {
-      prunePaths: [['layout', 'label'], ['layout']],
+    return this._setCanonicalScopedValue(scope, ['layout', 'hero', 'size'], value, {
+      deprecatedKeys: [['layout', 'label', 'hero_size']],
+      prunePaths: [['layout', 'hero'], ['layout']],
     });
   }
 
@@ -1536,27 +1550,27 @@ export class SensorBarCardPlusEditor extends HTMLElement {
     return this._setScopedLayoutHeroSize({ type: 'card' }, value);
   }
 
-  _normalizeHeroFontSizeValue(value) {
+  _normalizeHeroValueSizeValue(value) {
     const numericValue = this._normalizeNumberValue(value);
     if (numericValue === null) return null;
     return Math.min(112, Math.max(12, numericValue));
   }
 
-  _setScopedLayoutHeroFontSize(scope, value) {
+  _setScopedLayoutHeroValueSize(scope, value) {
     if (value === '' || value === null || value === undefined) {
-      return this._removeCanonicalScopedValue(scope, ['layout', 'label', 'font_size'], {
-        prunePaths: [['layout', 'label'], ['layout']],
+      return this._removeCanonicalScopedValue(scope, ['layout', 'hero', 'value_size'], {
+        prunePaths: [['layout', 'hero'], ['layout']],
       });
     }
-    const fontSize = this._normalizeHeroFontSizeValue(value);
-    if (fontSize === null) return false;
-    return this._setCanonicalScopedValue(scope, ['layout', 'label', 'font_size'], fontSize, {
-      prunePaths: [['layout', 'label'], ['layout']],
+    const valueSize = this._normalizeHeroValueSizeValue(value);
+    if (valueSize === null) return false;
+    return this._setCanonicalScopedValue(scope, ['layout', 'hero', 'value_size'], valueSize, {
+      prunePaths: [['layout', 'hero'], ['layout']],
     });
   }
 
-  _setLayoutHeroFontSize(value) {
-    return this._setScopedLayoutHeroFontSize({ type: 'card' }, value);
+  _setLayoutHeroValueSize(value) {
+    return this._setScopedLayoutHeroValueSize({ type: 'card' }, value);
   }
 
   _setScopedLayoutHeight(scope, value) {
@@ -1602,8 +1616,8 @@ export class SensorBarCardPlusEditor extends HTMLElement {
       let nextTarget = this._deletePathValue(target, ['layout', 'height']);
       nextTarget = this._deletePathValue(nextTarget, ['layout', 'label', 'position']);
       nextTarget = this._deletePathValue(nextTarget, ['layout', 'label', 'hero_size']);
-      nextTarget = this._deletePathValue(nextTarget, ['layout', 'label', 'font_size']);
       nextTarget = this._deletePathValue(nextTarget, ['layout', 'label', 'width']);
+      nextTarget = this._deletePathValue(nextTarget, ['layout', 'hero']);
       nextTarget = this._deletePathValue(nextTarget, ['height']);
       nextTarget = this._deletePathValue(nextTarget, ['label_position']);
       nextTarget = this._deletePathValue(nextTarget, ['label_width']);
@@ -1621,10 +1635,12 @@ export class SensorBarCardPlusEditor extends HTMLElement {
       || (this._isObject(labelValue) && (
         Object.prototype.hasOwnProperty.call(labelValue, 'position')
         || Object.prototype.hasOwnProperty.call(labelValue, 'hero_size')
-        || Object.prototype.hasOwnProperty.call(labelValue, 'font_size')
         || Object.prototype.hasOwnProperty.call(labelValue, 'width')
       ))
     )) {
+      return true;
+    }
+    if (this._isObject(layoutValue) && this._isObject(layoutValue.hero) && Object.keys(layoutValue.hero).length) {
       return true;
     }
     return this._getScopedValue(scope, ['height']) !== undefined
@@ -4035,7 +4051,7 @@ export class SensorBarCardPlusEditor extends HTMLElement {
       const fillStyle = this._getFillStyleValue();
       const layoutLabelPosition = this._getScopedLayoutValue({ type: 'card' }, 'position') || 'left';
       const layoutHeroSize = this._getScopedLayoutValue({ type: 'card' }, 'hero_size') || 'medium';
-      const layoutHeroFontSize = this._getScopedLayoutValue({ type: 'card' }, 'font_size');
+      const layoutHeroValueSize = this._getScopedLayoutValue({ type: 'card' }, 'value_size');
       const layoutHeight = this._getScopedLayoutValue({ type: 'card' }, 'height');
       const layoutLabelWidth = this._getScopedLayoutValue({ type: 'card' }, 'width');
       const barColor = this._getScopedBarColorValue({ type: 'card' });
@@ -4692,8 +4708,8 @@ export class SensorBarCardPlusEditor extends HTMLElement {
                         </select>
                       </div>
                       <div class="field-row">
-                        <label for="entity-${index}-label-font-size">Maximum font size</label>
-                        <input id="entity-${index}-label-font-size" type="number" min="12" max="112" step="1" data-kind="entity-layout-label-font-size" data-index="${index}" value="${this._escapeAttribute(this._getEffectiveScopedLayoutValue(scope, 'font_size'))}" placeholder="use Hero size preset">
+                        <label for="entity-${index}-hero-value-size">Maximum font size</label>
+                        <input id="entity-${index}-hero-value-size" type="number" min="12" max="112" step="1" data-kind="entity-layout-hero-value-size" data-index="${index}" value="${this._escapeAttribute(this._getEffectiveScopedLayoutValue(scope, 'value_size'))}" placeholder="use Hero size preset">
                         <div class="section-note">The hero value may render smaller when needed to fit. A custom value overrides the Hero size preset.</div>
                       </div>
                       ` : ''}
@@ -5416,8 +5432,8 @@ export class SensorBarCardPlusEditor extends HTMLElement {
               </select>
             </div>
             <div class="field-row">
-              <label for="layout-label-font-size">Maximum font size</label>
-              <input id="layout-label-font-size" type="number" min="12" max="112" step="1" data-field="layout-label-font-size" value="${this._escapeAttribute(layoutHeroFontSize)}" placeholder="use Hero size preset">
+              <label for="layout-hero-value-size">Maximum font size</label>
+              <input id="layout-hero-value-size" type="number" min="12" max="112" step="1" data-field="layout-hero-value-size" value="${this._escapeAttribute(layoutHeroValueSize)}" placeholder="use Hero size preset">
               <div class="section-note">The hero value may render smaller when needed to fit. A custom value overrides the Hero size preset.</div>
             </div>
             ` : ''}
@@ -5839,7 +5855,7 @@ export class SensorBarCardPlusEditor extends HTMLElement {
     if (field === 'formatting-decimal') return void this._setScopedFormattingDecimal({ type: 'card' }, value);
     if (field === 'layout-label-position') return void this._setLayoutLabelPosition(value);
     if (field === 'layout-label-hero-size') return void this._setLayoutHeroSize(value);
-    if (field === 'layout-label-font-size') return void this._setLayoutHeroFontSize(value);
+    if (field === 'layout-hero-value-size') return void this._setLayoutHeroValueSize(value);
     if (field === 'layout-height') return void this._setLayoutHeight(value);
     if (field === 'layout-label-width') return void this._setScopedLayoutLabelWidth({ type: 'card' }, value);
     if (field === 'scale-min') return void this._setScaleBound('min', value);
@@ -5948,8 +5964,8 @@ export class SensorBarCardPlusEditor extends HTMLElement {
       return void this._setScopedLayoutHeroSize({ type: 'entity', index: Number(target.dataset.index) }, value);
     }
 
-    if (kind === 'entity-layout-label-font-size') {
-      return void this._setScopedLayoutHeroFontSize({ type: 'entity', index: Number(target.dataset.index) }, value);
+    if (kind === 'entity-layout-hero-value-size') {
+      return void this._setScopedLayoutHeroValueSize({ type: 'entity', index: Number(target.dataset.index) }, value);
     }
 
     if (kind === 'entity-layout-label-width') {
